@@ -1,0 +1,66 @@
+name: 每日更新菜價
+
+on:
+  schedule:
+    - cron: "30 3 * * *"   # 台灣 11:30：多數市場早上的行情已上傳
+    - cron: "30 9 * * *"   # 台灣 17:30：補抓較晚上傳、或被修正的市場資料
+  workflow_dispatch:        # 也可以在 Actions 頁面手動按「Run workflow」
+  push:
+    branches: [main]
+    paths: ["tools/**", ".github/workflows/**"]
+
+permissions:
+  contents: write   # 把新抓的資料存回 repo
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daily-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: 抓最近 10 天的農業部批發行情
+        run: python tools/fetch.py --days 10
+
+      - name: 抓臺北市公有市場零售行情
+        run: python tools/fetch_retail.py
+        continue-on-error: true   # 臺北市網站掛了就沿用上次的檔案
+
+      - name: 重算指標、產生網頁
+        run: |
+          python tools/build.py
+          python tools/inject.py
+
+      - name: 把新資料存回 repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "資料沒有變化"
+          else
+            git commit -m "資料更新 $(TZ=Asia/Taipei date +%F)"
+            git pull --rebase
+            git push
+          fi
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,6 @@
+# 產生出來的網站（GitHub Actions 每天重建）
+site/
+# 本機工具設定
+.claude/
+__pycache__/
+*.pyc

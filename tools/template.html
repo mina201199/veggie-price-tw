@@ -1,0 +1,632 @@
+<title>這菜貴不貴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #F3F5F0;
+  --surface: #FFFFFF;
+  --surface-2: #E9EDE6;
+  --ink: #1B231E;
+  --ink-2: #4B574F;
+  --ink-3: #7A857D;
+  --line: #D8DED4;
+  --accent: #2A4B9B;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E9F7;
+  --stripe-red: #C8372D;
+  --stripe-white: #FFFFFF;
+  --good: #1F7446; --good-bg: #E0F0E6;
+  --ok: #4F6072;   --ok-bg: #E6EBF0;
+  --warn: #A95F06; --warn-bg: #FAEBD2;
+  --bad: #B8301F;  --bad-bg: #FAE1DC;
+  --ly: #A5AEA7;
+  --display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111613; --surface: #19201C; --surface-2: #222A25; --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82;
+    --line: #2D3731; --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+    --stripe-red: #D9584A; --stripe-white: #2A322D;
+    --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+    --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16; --ly: #5B6760;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111613; --surface: #19201C; --surface-2: #222A25; --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82;
+  --line: #2D3731; --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+  --stripe-red: #D9584A; --stripe-white: #2A322D;
+  --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+  --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16; --ly: #5B6760;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* 茄芷袋條紋 */
+.stripe { height: 10px; background: repeating-linear-gradient(90deg,
+  var(--stripe-red) 0 22px, var(--stripe-white) 22px 28px, var(--accent) 28px 50px, var(--stripe-white) 50px 56px); }
+.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 14px; }
+.brand h1 { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: .02em; }
+.brand p { margin: 2px 0 0; color: var(--ink-3); font-size: 13px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 20px 40px; }
+@media (min-width: 920px) { .layout { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
+
+/* 搜尋 */
+.search { position: relative; }
+.search-row { display: flex; gap: 8px; }
+.search input { flex: 1; min-width: 0; height: 52px; padding: 0 16px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); font-size: 17px; }
+.search input:focus { border-color: var(--accent); outline: none; }
+.btn-go { height: 52px; padding: 0 22px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px; cursor: pointer; white-space: nowrap; }
+.suggest { position: absolute; z-index: 5; left: 0; right: 0; top: 58px; margin: 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.suggest li { padding: 9px 12px; border-radius: 9px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.suggest li[aria-selected="true"], .suggest li:hover { background: var(--accent-soft); }
+.suggest small { color: var(--ink-3); }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.quick span { color: var(--ink-3); font-size: 13px; margin-right: 2px; }
+.chip { border: 1px solid var(--line); background: var(--surface); padding: 5px 13px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-current="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* 結果 */
+.result { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.res-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 20px 22px 0; flex-wrap: wrap; }
+.res-head h2 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0; line-height: 1.2; }
+.res-head .off { color: var(--ink-3); font-size: 13px; }
+.verdict { margin: 14px 22px 0; padding: 16px 18px; border-radius: 14px; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-items: center; }
+.v-label { font-family: var(--display); font-size: 34px; line-height: 1; grid-row: span 2; }
+.v-text { font-weight: 700; font-size: 17px; }
+.v-why { font-size: 14px; color: var(--ink-2); }
+.v-good { background: var(--good-bg); } .v-good .v-label { color: var(--good); }
+.v-ok   { background: var(--ok-bg); }   .v-ok .v-label   { color: var(--ok); }
+.v-warn { background: var(--warn-bg); } .v-warn .v-label { color: var(--warn); }
+.v-bad  { background: var(--bad-bg); }  .v-bad .v-label  { color: var(--bad); }
+.v-off, .v-na { background: var(--surface-2); } .v-off .v-label, .v-na .v-label { color: var(--accent); font-size: 28px; }
+.tag-imp { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 7px; margin-left: 8px; vertical-align: middle; font-family: var(--body); }
+.twin { margin: 10px 22px 0; width: calc(100% - 44px); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; text-align: left; border: 1px dashed var(--accent); background: transparent; border-radius: 12px; padding: 10px 14px; cursor: pointer; font-size: 14px; }
+.twin:hover { background: var(--accent-soft); }
+.twin b { color: var(--accent); white-space: nowrap; }
+.note { margin: 10px 22px 0; font-size: 13px; color: var(--warn); }
+
+/* 攤販價檢查 */
+.stall { margin: 14px 22px 0; padding: 14px 16px 12px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--surface); }
+.stall h3 { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 10px; letter-spacing: 0; }
+.stall-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.stall label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.stall input, .stall select { height: 42px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); padding: 0 10px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.stall input:focus, .stall select:focus { border-color: var(--accent); outline: none; }
+#sp { width: 100px; } #sw { width: 72px; }
+.stall-hint { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.stall-out { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: center; }
+.stall-out .pill { font-family: var(--display); font-size: 22px; line-height: 1; grid-row: span 2; }
+.stall-out .t { font-weight: 700; }
+.stall-out .d { font-size: 13.5px; color: var(--ink-2); }
+.stall-out.ref { display: block; font-size: 14px; }
+.s-good { background: var(--good-bg); } .s-good .pill { color: var(--good); }
+.s-ok   { background: var(--ok-bg); }   .s-ok .pill   { color: var(--ok); }
+.s-warn { background: var(--warn-bg); } .s-warn .pill { color: var(--warn); }
+.s-bad  { background: var(--bad-bg); }  .s-bad .pill  { color: var(--bad); }
+.nw { white-space: nowrap; }
+.stall-src { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.55; }
+
+.stats { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; padding: 20px 22px; align-items: end; }
+@media (max-width: 560px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.price .big { font-family: var(--display); font-size: 52px; line-height: 1; }
+.price .u { font-size: 15px; color: var(--ink-2); margin-left: 6px; }
+.price small { display: block; margin-top: 6px; color: var(--ink-3); font-size: 12.5px; }
+.facts { margin: 0; display: grid; gap: 6px; }
+.facts div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--line); padding-bottom: 5px; }
+.facts dt { color: var(--ink-2); font-size: 14px; }
+.facts dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.up { color: var(--bad); } .down { color: var(--good); }
+
+.block { padding: 0 22px 20px; }
+.block h3 { font-size: 13px; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; margin: 0 0 8px; }
+.yearbar .track { position: relative; height: 10px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--good) 0%, var(--ok) 50%, var(--bad) 100%); opacity: .85; }
+.yearbar .mark { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 3px solid var(--ink); transform: translate(-50%, -50%); }
+.yearbar .ends { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+.yearbar p { margin: 8px 0 0; font-size: 14px; }
+
+.chart svg { display: block; width: 100%; height: auto; }
+.chart .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-3); margin-top: 4px; flex-wrap: wrap; }
+.chart .legend i { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--accent); vertical-align: middle; margin-right: 6px; }
+.chart .legend i.ly { border-top: 2px dashed var(--ly); }
+.axis { font-size: 11px; fill: var(--ink-3); font-family: var(--body); }
+.grid-l { stroke: var(--line); stroke-width: 1; }
+
+.months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
+.months div { aspect-ratio: 1 / 1.25; max-width: 100%; border-radius: 6px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font-size: 11px; padding-bottom: 3px; position: relative; color: var(--ink-2); }
+.months div.now { outline: 2px solid var(--ink); outline-offset: 1px; font-weight: 700; color: var(--ink); }
+.months div.peak::before { content: ""; position: absolute; top: 5px; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.months div.none { background: var(--surface-2); color: var(--ink-3); opacity: .55; }
+.months-cap { font-size: 13.5px; color: var(--ink-2); margin: 8px 0 0; }
+
+.alts { border-top: 1px solid var(--line); padding: 18px 22px 22px; }
+.alts.push { background: var(--accent-soft); }
+.alts h3 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0 4px; letter-spacing: 0; color: var(--ink); }
+.alts > p { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-2); }
+.alts { container-type: inline-size; }
+.alt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@container (min-width: 600px) { .alt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.alt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px 14px; cursor: pointer; display: grid; gap: 2px; }
+.alt:hover { border-color: var(--accent); }
+.alt b { font-size: 16px; }
+.alt .p { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 14px; }
+.alt .why { font-size: 12.5px; color: var(--good); }
+.alt .tag { font-size: 11.5px; color: var(--accent); font-weight: 700; }
+
+/* 當季側欄 */
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px 18px 8px; }
+.side h2 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0; }
+.side > p { margin: 2px 0 12px; font-size: 13px; color: var(--ink-3); }
+.tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; scrollbar-width: none; }
+.tabs button { flex: none; border: 0; background: var(--surface-2); padding: 4px 10px; border-radius: 999px; cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.season { list-style: none; margin: 0; padding: 0; }
+.season li + li { border-top: 1px solid var(--line); }
+.season button { width: 100%; border: 0; background: none; text-align: left; padding: 11px 2px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 0 10px; }
+.season button:hover b { color: var(--accent); }
+.season b { font-size: 15.5px; }
+.season .c { font-size: 11.5px; color: var(--ink-3); margin-left: 6px; font-weight: 400; }
+.season .p { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+.season .why { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-2); }
+.season .why em { font-style: normal; color: var(--good); font-weight: 700; }
+.empty { color: var(--ink-3); font-size: 14px; padding: 12px 0; }
+
+footer { border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; }
+footer .wrap { padding-block: 18px 32px; display: grid; gap: 6px; max-width: 1120px; }
+footer p { margin: 0; max-width: 72ch; }
+footer a { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .yearbar .mark { transition: left .4s ease; } }
+</style>
+
+<header class="top">
+  <div class="stripe" aria-hidden="true"></div>
+  <div class="wrap head">
+    <div class="brand">
+      <h1>這菜貴不貴</h1>
+      <p id="asof">農業部批發行情</p>
+    </div>
+    <div class="seg" role="group" aria-label="價格單位">
+      <button type="button" id="u-jin" data-unit="jin" aria-pressed="true">元／台斤</button>
+      <button type="button" id="u-kg" data-unit="kg" aria-pressed="false">元／公斤</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <section>
+    <form class="search" id="search" autocomplete="off" role="search">
+      <div class="search-row">
+        <input id="q" type="search" aria-label="想買什麼菜" placeholder="想買什麼菜？例如：高麗菜" aria-autocomplete="list" aria-controls="suggest">
+        <button class="btn-go" type="submit">查價</button>
+      </div>
+      <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+    </form>
+    <div class="quick" id="quick"><span>常買：</span></div>
+    <article class="result" id="result" aria-live="polite"></article>
+  </section>
+
+  <aside class="side">
+    <h2>現在當季・買了划算</h2>
+    <p>到貨量比平常多、價格又低於往年同期的品項</p>
+    <div class="tabs" id="tabs"></div>
+    <ol class="season" id="season"></ol>
+  </aside>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>資料來源：農業部農業資料開放平臺「農產品交易行情」（全台果菜批發市場每日成交資料）。價格為各市場依交易量加權的<strong>批發均價</strong>，菜市場或超市的零售價通常會再高一些，但漲跌大致跟著批發價走。</p>
+    <p>判斷方式：最新價（近 5 天依交易量加權）與「過去五年同一時期（前後 15 天）」的價格中位數比較；便宜 ≤ 0.88 倍、正常 ≤ 1.12 倍、偏貴 ≤ 1.35 倍，以上為很貴。當季＝近兩週日均到貨量比過去一年平均多 10% 以上。1 台斤 = 600 公克。</p>
+    <p>攤販零售價參考：臺北市市場處「臺北市公有零售市場行情」每月各品項平均零售價，和農業部同月批發價配對，每個品項各自算出「零售 ≈ 固定成本 + 倍數 × 批發」的關係（攤商有固定開銷，批發很便宜時零售不會等比例降）。沒有零售資料的品項用同類平均倍數估計。</p>
+    <p>收錄範圍：農業部蔬菜、水果的所有品名；進口貨另外列成「（進口）」，不和國產混算；萵苣、雜柑等依品種拆開（例如大陸妹、檸檬）。不列：醃漬加工品、花卉、「其他」類，以及近兩年幾乎沒有交易的品項。</p>
+    <p id="snap"></p>
+  </div>
+</footer>
+
+<script>
+const DATA = /*DATA*/;
+
+// 常見叫法 → 對應到資料裡的常用名
+const ALIAS = {
+  "高麗菜": ["甘藍", "捲心菜", "包心菜", "高麗"], "大白菜": ["包心白", "結球白菜", "山東白菜", "白菜"],
+  "空心菜": ["蕹菜", "應菜"], "地瓜": ["甘薯", "番薯", "蕃薯"], "地瓜葉": ["甘薯葉", "番薯葉", "蕃薯葉"],
+  "芋頭": ["芋"], "小黃瓜": ["花胡瓜", "黃瓜"], "大黃瓜": ["胡瓜", "黃瓜"], "蒲瓜・瓠瓜": ["扁蒲", "瓠子", "匏仔"],
+  "青花菜・綠花椰": ["青花苔", "綠花椰菜", "花椰菜", "西蘭花", "花菜"], "花椰菜": ["白花椰", "花菜"],
+  "番茄": ["蕃茄", "牛番茄", "西紅柿"], "甜椒・青椒": ["青椒", "彩椒", "紅椒", "黃椒"], "芭樂": ["番石榴"],
+  "火龍果": ["紅龍果"], "柳丁": ["柳橙", "甜橙", "橙"], "柚子・文旦": ["文旦", "柚"], "金針菇": ["金絲菇"],
+  "豆芽菜": ["綠豆芽", "黃豆芽", "芽菜", "豆芽"], "佛手瓜": ["隼人瓜", "龍鬚菜"], "秋葵": ["黃秋葵"],
+  "四季豆": ["敏豆"], "菜豆・長豆": ["長豆", "豇豆", "菜豆"],
+  "A菜・油麥菜": ["A菜", "油麥菜", "萵仔菜", "鵝仔菜", "萵苣"], "大陸妹": ["本島圓葉", "福山萵苣", "萵苣"],
+  "美生菜": ["結球萵苣", "萵苣"], "蘿蔓": ["蘿美", "羅蔓", "萵苣"], "大頭菜": ["球莖甘藍", "結頭菜"],
+  "檸檬": ["雜柑", "無子檸檬", "黃金檸檬"], "皇帝豆・萊豆": ["皇帝豆", "萊豆"], "過貓・蕨菜": ["過貓", "過溝菜"],
+  "花生": ["落花生", "土豆"], "荸薺・馬蹄": ["荸薺", "馬蹄"], "豆薯": ["涼薯"], "梅子": ["梅", "青梅"],
+  "棗子": ["棗", "蜜棗", "印度棗"], "水蓮": ["水蓮菜"], "玉米筍": ["珍珠筍"], "茼蒿": ["打某菜"], "川七": ["藤三七"],
+  "A菜心・萵苣莖": ["A菜心", "萵苣筍", "嫩莖萵苣"], "菠蘿蜜": ["波蘿蜜"], "甜菜・菾菜": ["甜菜"],
+  "白蘿蔔": ["蘿蔔", "菜頭"], "紅蘿蔔": ["胡蘿蔔"], "香菜": ["芫荽"], "山藥": ["薯蕷", "淮山"],
+  "木耳": ["黑木耳", "濕木耳"], "香菇": ["濕香菇", "鮮香菇"], "洋香瓜・哈密瓜": ["哈密瓜", "網紋瓜", "洋香瓜"],
+  "香瓜": ["甜瓜"], "青蔥": ["蔥", "蔥仔"], "薑": ["生薑", "嫩薑", "老薑"], "荷蘭豆": ["豌豆"], "皇宮菜": ["落葵"],
+};
+// 煮起來口感、用途相近的替代品（先推這些）
+const SUBS = {
+  "高麗菜": ["大白菜", "小白菜", "青江菜"], "大白菜": ["高麗菜", "小白菜", "青江菜"],
+  "小白菜": ["青江菜", "油菜", "空心菜"], "青江菜": ["小白菜", "油菜"], "油菜": ["小白菜", "青江菜"],
+  "菠菜": ["莧菜", "地瓜葉", "小白菜"], "空心菜": ["地瓜葉", "莧菜", "水蓮", "皇宮菜"],
+  "A菜・油麥菜": ["大陸妹", "油菜", "小白菜"], "大陸妹": ["A菜・油麥菜", "美生菜", "蘿蔓"],
+  "美生菜": ["大陸妹", "蘿蔓"], "蘿蔓": ["美生菜", "大陸妹"], "大頭菜": ["白蘿蔔", "大心菜"], "白蘿蔔": ["大頭菜", "大心菜"],
+  "茼蒿": ["菠菜", "莧菜"],
+  "芥藍": ["油菜", "青江菜"], "芹菜": ["韭菜", "青蔥"],
+  "花椰菜": ["青花菜・綠花椰"], "青花菜・綠花椰": ["花椰菜"], "小黃瓜": ["大黃瓜", "絲瓜"],
+  "大黃瓜": ["冬瓜", "蒲瓜・瓠瓜", "小黃瓜"], "絲瓜": ["蒲瓜・瓠瓜", "佛手瓜"], "蒲瓜・瓠瓜": ["絲瓜", "冬瓜"],
+  "甜椒・青椒": ["茄子", "四季豆"], "四季豆": ["菜豆・長豆", "秋葵", "荷蘭豆"], "荷蘭豆": ["四季豆", "菜豆・長豆"],
+  "南瓜": ["地瓜", "芋頭"], "馬鈴薯": ["地瓜", "芋頭", "山藥"], "紅蘿蔔": ["南瓜", "白蘿蔔"],
+  "蘆筍": ["四季豆", "茭白筍"], "番茄": ["甜椒・青椒", "茄子"], "茄子": ["絲瓜", "四季豆"],
+  "杏鮑菇": ["秀珍菇", "金針菇", "鴻喜菇"], "香菇": ["杏鮑菇", "鴻喜菇"], "青蔥": ["韭菜"],
+};
+const QUICK = ["高麗菜", "大白菜", "青蔥", "番茄", "地瓜葉", "空心菜", "南瓜", "香蕉", "芭樂"];
+const CATS = ["全部", "葉菜", "瓜果豆", "根莖", "菇類", "水果"];
+
+const items = DATA.items;
+const byName = Object.fromEntries(items.map(x => [x.n, x]));
+const asof = new Date(DATA.asof + "T00:00:00");
+let unit = "jin", current = null, seasonCat = "全部";
+try { const u = localStorage.getItem("unit"); if (u === "kg" || u === "jin") unit = u; } catch (e) {}
+
+const $ = s => document.querySelector(s);
+const conv = v => v == null ? null : (unit === "jin" ? v * 0.6 : v);
+const fmt = v => { const x = conv(v); return x >= 100 ? x.toFixed(0) : x.toFixed(1); };
+const uLabel = () => unit === "jin" ? "元／台斤" : "元／公斤";
+const pctTxt = r => { const p = Math.round((r - 1) * 100); return (p > 0 ? "+" : "") + p + "%"; };
+const md = d => `${d.getMonth() + 1}/${d.getDate()}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function verdict(it) {
+  if (it.cur == null) return { k: "off", label: "非產季", text: "最近批發市場沒有到貨，現在買不太到" };
+  if (it.sup < 0.2) return { k: "off", label: "非產季", text: "現在不是它的季節，貨少、價格也不穩" };
+  if (it.r == null) return { k: "na", label: "難判斷", text: "往年這時候很少交易，沒辦法比貴不貴" };
+  if (it.r <= 0.88) return { k: "good", label: "便宜", text: "比平常便宜，現在買划算" };
+  if (it.r <= 1.12) return { k: "ok", label: "正常", text: "價格正常，照常買就好" };
+  if (it.r <= 1.35) return { k: "warn", label: "偏貴", text: "有點貴，少買一點或換別的" };
+  return { k: "bad", label: "很貴", text: "很貴，建議先換別的菜" };
+}
+function why(it) {
+  const s = Math.round((it.sup - 1) * 100), parts = [];
+  const pk = peakRanges(it), later = pk ? `最划算的時候是 ${pk}，到時候再買又便宜又好吃。` : "";
+  if (it.cur == null) return `上次有交易是 ${md(new Date(it.last + "T00:00:00"))}，當時 ${fmt(it.lastp)} ${uLabel()}。` + later;
+  if (it.sup < 0.2) return (it.sup < 0.01 ? "近兩週幾乎沒有到貨。" : `近兩週到貨量只有平常的 ${Math.round(it.sup * 100)}%。`) + later;
+  if (it.r == null) return `目前 ${fmt(it.cur)} ${uLabel()}，但過去五年這段時間的成交太少，沒有可以比的基準。` + later;
+  if (s <= -15) parts.push(`近兩週到貨量比平常少 ${-s}%`);
+  else if (s >= 10) parts.push(`近兩週到貨量比平常多 ${s}%`);
+  parts.push(`價格是往年同期的 ${it.r.toFixed(2)} 倍`);
+  let t = parts.join("，") + "。";
+  if (it.r <= 1.12 && it.pct >= 0.85) t += "不過這時節本來就是它一年中比較貴的時候。";
+  if (it.r > 1.12 && it.pct <= 0.3) t += "雖然比往年同期貴，但已經是過去一年相對低的價位。";
+  return t;
+}
+// 攤販零售價：零售 ≈ a + b × 批發（元/台斤）。超出建模時看過的批發價範圍，就沿用邊界的倍數，不外推直線
+function retailEst(it) {
+  const rm = it.rm, w = it.w14 ?? it.cur;
+  if (!rm || w == null) return null;
+  const wj = w * 0.6;
+  let ratio = rm.b;
+  if (rm.wlo != null) { const ww = Math.min(Math.max(wj, rm.wlo), rm.whi); ratio = (rm.a + rm.b * ww) / ww; }
+  const est = wj * ratio, band = Math.min(0.35, Math.max(0.12, rm.err * 1.5));
+  return { est, lo: est * (1 - band), hi: est * (1 + band) };
+}
+const rFmt = vJin => Math.round(unit === "jin" ? vJin : vJin / 0.6);
+const ym = s => { const [y, m] = s.split("-"); return `${y}/${+m}`; };
+const stallInputs = {};
+function stallVerdict(it, e, pJin) {
+  const r = pJin / e.est, wv = verdict(it).k;
+  let s;
+  if (pJin < e.lo) s = { k: "good", label: "划算", t: `比一般行情便宜約 ${Math.round((1 - r) * 100)}%，可以買`, d: "" };
+  else if (pJin <= e.hi) s = { k: "ok", label: "合理", t: "在一般零售行情內", d: "" };
+  else if (pJin <= e.hi * 1.2) s = { k: "warn", label: "偏貴", t: `比一般行情高約 ${Math.round((r - 1) * 100)}%`, d: "可以比比看別攤，或問老闆能不能算便宜一點。" };
+  else s = { k: "bad", label: "太貴", t: `比一般行情高約 ${Math.round((r - 1) * 100)}%`, d: "建議換一攤，或換別的菜。" };
+  if (pJin < e.est * 0.5) s.d = "便宜很多，留意一下新鮮度，或是不是次級品、剩貨出清。";
+  else if (s.k === "ok" && (wv === "warn" || wv === "bad")) s.d = "攤販沒有亂開價，是這陣子批發本來就貴；想省可以換下面推薦的菜。";
+  else if ((s.k === "warn" || s.k === "bad") && wv === "good") s.d = "批發其實正便宜，這攤開得偏高，" + s.d;
+  return s;
+}
+function updateStall(it) {
+  const out = $("#stall-out"), e = retailEst(it);
+  if (!out || !e) return;
+  const v = stallInputs[it.n] || {}, price = parseFloat(v.p), w = parseFloat(v.w);
+  const jin = !(w > 0) ? null : v.u === "kg" ? w / 0.6 : v.u === "g" ? w / 600 : w;
+  const range = `一般零售大約 <span class="nw"><b class="num">${rFmt(e.lo)}–${rFmt(e.hi)}</b> ${uLabel()}</span>`;
+  if (!(price > 0) || !jin) { out.className = "stall-out ref"; out.innerHTML = `行情參考：現在${range}。`; return; }
+  const pJin = price / jin, s = stallVerdict(it, e, pJin);
+  out.className = `stall-out s-${s.k}`;
+  out.innerHTML = `<span class="pill">${s.label}</span><span class="t">你看到的是 <span class="nw">${rFmt(pJin)} ${uLabel()}</span>，${s.t}</span>
+    <span class="d">${range}。${s.d}</span>`;
+}
+function stallHTML(it) {
+  const e = retailEst(it);
+  if (!e) return `<section class="stall"><h3>攤販賣多少？</h3><p class="stall-hint" style="margin:0">現在批發市場沒有這項的行情，沒辦法估零售價。</p></section>`;
+  const v = stallInputs[it.n] || (stallInputs[it.n] = { p: "", w: "1", u: "jin" }), rm = it.rm, R = DATA.retail;
+  const src = rm.src === "item" ? `依臺北市公有零售市場 ${ym(R.from)}–${ym(R.to)} 共 ${rm.n} 個月的零售價，對照同月批發價推算，平均誤差約 ±${Math.round(rm.err * 100)}%。`
+    : rm.src === "twin" ? `臺北市零售行情沒有分進口，這裡借用國產${esc(it.tw)}的零售和批發關係推算，參考就好。`
+    : `臺北市零售行情沒有這一項，用「${it.c}」類的平均加價倍數估計，範圍放得比較寬。`;
+  const ly = it.rly ? `去年 ${+R.ly.slice(5)} 月臺北市公有市場平均零售 ${rFmt(it.rly)} ${uLabel()}。` : "";
+  return `<section class="stall">
+    <h3>攤販賣多少？幫你看合不合理</h3>
+    <div class="stall-row">
+      <label>價格 <input id="sp" type="number" inputmode="decimal" min="0" step="1" placeholder="例如 60" value="${esc(v.p)}"> 元</label>
+      <label>重量 <input id="sw" type="number" inputmode="decimal" min="0" step="0.1" value="${esc(v.w)}">
+        <select id="su" aria-label="重量單位">
+          <option value="jin"${v.u === "jin" ? " selected" : ""}>台斤</option>
+          <option value="kg"${v.u === "kg" ? " selected" : ""}>公斤</option>
+          <option value="g"${v.u === "g" ? " selected" : ""}>公克</option>
+        </select></label>
+    </div>
+    <p class="stall-hint">一顆、一把在賣的，請老闆秤一下重量再填。</p>
+    <div class="stall-out ref" id="stall-out" aria-live="polite"></div>
+    <p class="stall-src">${src}${ly}以臺北市傳統市場為準，其他縣市、超市或有機店可能不同。</p>
+  </section>`;
+}
+
+// 推薦只推國產、有在交易、量夠大的（null 在 JS 比大小會變 0，要先排除）
+const goodBuy = x => !x.imp && x.r != null && x.pct != null && x.r <= 0.95 && x.pct <= 0.75 && x.sup >= 0.85 && x.vol >= 1500;
+const score = x => x.r / Math.max(0.6, Math.min(x.sup, 2));
+
+function alternatives(it) {
+  const subs = (SUBS[it.n] || []).map(n => byName[n]).filter(x => x && goodBuy(x));
+  const same = items.filter(x => x !== it && x.c === it.c && goodBuy(x) && !subs.includes(x)).sort((a, b) => score(a) - score(b));
+  let list = [...subs.map(x => ({ x, sub: true })), ...same.map(x => ({ x }))];
+  if (list.length < 3 && it.c !== "水果") {
+    const more = items.filter(x => x !== it && !["水果", "辛香"].includes(x.c) && goodBuy(x) && !list.some(l => l.x === x))
+      .sort((a, b) => score(a) - score(b));
+    list = list.concat(more.map(x => ({ x })));
+  }
+  return list.slice(0, list.length >= 4 ? 4 : list.length >= 2 ? 2 : 1);
+}
+
+// 划算月：到貨量多且價格不高於平均，或價格明顯低（量不能太少，避免零星交易的雜訊）
+const isPeak = it => it.mo.map(([v, p]) => (v >= 1.1 && p <= 1.1) || (v >= 0.5 && p <= 0.8));
+function peakRanges(it) {
+  const peaks = isPeak(it);
+  if (!peaks.some(Boolean)) return null;
+  const start = peaks.findIndex((p, i) => p && !peaks[(i + 11) % 12]);
+  const ranges = [];
+  for (let k = 0; k < 12; k++) {
+    const i = (start + k) % 12;
+    if (peaks[i] && !peaks[(i + 11) % 12]) ranges.push([i, i]);
+    else if (peaks[i]) ranges[ranges.length - 1][1] = i;
+  }
+  return ranges.map(([a, b]) => a === b ? `${a + 1} 月` : `${a + 1}–${b + 1} 月`).join("、");
+}
+function monthsHTML(it) {
+  const now = asof.getMonth();
+  const peaks = isPeak(it);
+  const cells = it.mo.map((m, i) => {
+    if (m[0] < 0.3) return `<div class="none ${i === now ? "now" : ""}" title="${i + 1} 月：幾乎沒有到貨">${i + 1}</div>`;
+    const t = Math.max(0, Math.min(1, (1.25 - m[1]) / 0.6));
+    const bg = `color-mix(in srgb, var(--good) ${Math.round(8 + t * 72)}%, var(--surface-2))`;
+    const fg = t > 0.6 ? "var(--surface)" : "";
+    return `<div class="${i === now ? "now" : ""} ${peaks[i] ? "peak" : ""}" style="background:${bg};${fg ? "color:" + fg : ""}" title="${i + 1} 月：價格為全年平均的 ${Math.round(m[1] * 100)}%，到貨量為平均的 ${Math.round(m[0] * 100)}%">${i + 1}</div>`;
+  }).join("");
+  const pk = peakRanges(it);
+  const none = it.mo.some(m => m[0] < 0.3);
+  const cap = (pk ? `● 最划算：${pk}（到貨多、價格不比全年平均高）。` : "全年價格起伏不大，沒有特別划算的月份。") + (none ? "淡灰色的月份幾乎沒貨。" : "");
+  return `<div class="months" role="img" aria-label="${esc(cap)}">${cells}</div><p class="months-cap">${cap}</p>`;
+}
+
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+function drawChart(it) {
+  const box = $("#chart");
+  if (!box) return;
+  const W = Math.max(280, box.clientWidth), H = 190, m = { l: 36, r: 46, t: 12, b: 24 };
+  const a = it.s.map(conv), b = it.ly.map(conv);
+  const vals = a.concat(b).filter(v => v != null);
+  if (!vals.length) { box.innerHTML = `<p class="empty">近 60 天和去年同期都沒有交易。</p>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1) { hi += 1; lo = Math.max(0, lo - 1); }
+  const step = niceStep((hi - lo) / 3);
+  lo = Math.max(0, Math.floor(lo / step) * step); hi = Math.ceil(hi / step) * step;
+  const n = a.length - 1;
+  const x = i => m.l + i * (W - m.l - m.r) / n;
+  const y = v => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+  const line = arr => arr.map((v, i) => v == null ? null : [x(i), y(v)]).filter(Boolean);
+  const path = pts => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+  const pa = line(a), pb = line(b);
+  let g = "";
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    g += `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"/>`;
+    g += `<text class="axis" x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${+v.toFixed(1)}</text>`;
+  }
+  [0, 30, n].forEach(i => {
+    const d = new Date(asof); d.setDate(d.getDate() - (n - i));
+    g += `<text class="axis" x="${x(i)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === n ? "end" : "middle"}">${md(d)}</text>`;
+  });
+  const area = pa.length ? path(pa) + `L${pa[pa.length - 1][0]} ${y(lo)}L${pa[0][0]} ${y(lo)}Z` : "";
+  const end = pa[pa.length - 1];
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="近 60 天批發價走勢，與去年同期比較">
+    ${g}
+    <path d="${path(pb)}" fill="none" stroke="var(--ly)" stroke-width="2" stroke-dasharray="4 4"/>
+    <path d="${area}" fill="var(--accent)" fill-opacity=".10"/>
+    <path d="${path(pa)}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${end ? `<circle cx="${end[0]}" cy="${end[1]}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+    <text class="axis" x="${end[0] + 8}" y="${end[1] + 4}" style="fill:var(--ink);font-weight:700">${fmt(it.s.filter(v => v != null).pop())}</text>` : ""}
+  </svg>`;
+}
+
+function render(it) {
+  current = it;
+  const v = verdict(it), alts = alternatives(it);
+  const push = ["warn", "bad", "off"].includes(v.k);
+  const tw = it.tw && byName[it.tw];
+  const twinHTML = tw && tw.cur != null ? `<button class="twin" type="button" data-name="${esc(tw.n)}">
+      <span>${it.imp ? "也有國產的" : v.k !== "off" ? "市場上也有進口貨" : verdict(tw).k !== "off" ? "國產現在少，市面上多半是進口貨" : "也有進口的，但現在一樣不多"}：${esc(tw.n)}</span>
+      <b>${fmt(tw.cur)} ${uLabel()}・${verdict(tw).label} →</b></button>` : "";
+  const lowHTML = it.vol < 300 && it.cur != null ? `<p class="note">這項每天批發量不到 300 公斤，價格容易大起大落，參考就好。</p>` : "";
+  const last = new Date(it.last + "T00:00:00");
+  const chg = it.m30 && it.cur ? it.cur / it.m30 : null;
+  const sup = Math.round((it.sup - 1) * 100);
+  const pctDays = Math.round(it.pct * 100);
+  const altHTML = alts.length ? `<div class="alt-grid">${alts.map(({ x, sub }) => `
+      <button class="alt" type="button" data-name="${esc(x.n)}">
+        ${sub ? `<span class="tag">煮法相近</span>` : `<span class="tag" style="color:var(--ink-3)">${x.c}・當季</span>`}
+        <b>${esc(x.n)}</b>
+        <span class="p">${fmt(x.cur)} ${uLabel()}</span>
+        <span class="why">比往年同期 ${pctTxt(x.r)}${x.sup >= 1.1 ? `・到貨 +${Math.round((x.sup - 1) * 100)}%` : ""}</span>
+      </button>`).join("")}</div>` : `<p class="empty">同類目前沒有特別划算的，可以看右邊的當季清單。</p>`;
+
+  $("#result").innerHTML = `
+    <div class="res-head">
+      <h2>${esc(it.n.replace("（進口）", ""))}${it.imp ? `<span class="tag-imp">進口</span>` : ""}</h2>
+      <span class="off">農業部品名：${esc(it.o)}・${it.c}</span>
+    </div>
+    <div class="verdict v-${v.k}">
+      <div class="v-label">${v.label}</div>
+      <div class="v-text">${v.text}</div>
+      <div class="v-why">${why(it)}</div>
+    </div>
+    ${twinHTML}${lowHTML}
+    ${stallHTML(it)}
+    ${push ? `<section class="alts push"><h3>先換這些，現在比較划算</h3><p>同類裡價格低於往年同期、貨源充足的菜</p>${altHTML}</section>` : ""}
+    <div class="stats">
+      <div class="price">
+        ${it.cur != null ? `<span class="big num">${fmt(it.cur)}</span><span class="u">${uLabel()}</span>
+        <small>最新批發均價（近 5 天依交易量加權，最後交易日 ${md(last)}）</small>` : `<span class="big">—</span>
+        <small>最近 10 天沒有交易（上次 ${md(last)}，${fmt(it.lastp)} ${uLabel()}）</small>`}
+      </div>
+      <dl class="facts">
+        <div><dt>往年同期</dt><dd>${it.base == null ? "—" : fmt(it.base) + (it.r != null ? ` <span class="${it.r > 1.05 ? "up" : it.r < 0.95 ? "down" : ""}">(${pctTxt(it.r)})</span>` : "")}</dd></div>
+        <div><dt>一個月前</dt><dd>${chg ? `${fmt(it.m30)} <span class="${chg > 1.05 ? "up" : chg < 0.95 ? "down" : ""}">(${pctTxt(chg)})</span>` : "—"}</dd></div>
+        <div><dt>近兩週到貨量</dt><dd class="${sup <= -15 ? "up" : sup >= 10 ? "down" : ""}">${sup >= 0 ? "比平常多 " + sup : "比平常少 " + -sup}%</dd></div>
+      </dl>
+    </div>
+    ${it.pct == null ? "" : `<div class="block yearbar">
+      <h3>在過去一年裡的價位</h3>
+      <div class="track"><span class="mark" style="left:${Math.max(2, Math.min(98, pctDays))}%"></span></div>
+      <div class="ends num"><span>一年最低 ${fmt(it.lo)}</span><span>一年最高 ${fmt(it.hi)}</span></div>
+      <p>現在的價格，比過去一年 <strong>${pctDays}%</strong> 的交易日都貴。</p>
+    </div>`}
+    <div class="block chart">
+      <h3>近 60 天走勢（5 日平均，${uLabel()}）</h3>
+      <div id="chart"></div>
+      <div class="legend"><span><i></i>今年</span><span><i class="ly"></i>去年同期</span></div>
+    </div>
+    <div class="block">
+      <h3>一年中哪幾個月最划算（顏色越深＝價格越低）</h3>
+      ${monthsHTML(it)}
+    </div>
+    ${push ? "" : `<section class="alts"><h3>同類也划算的</h3><p>想換換口味，這些現在也不貴</p>${altHTML}</section>`}`;
+  drawChart(it);
+  updateStall(it);
+  document.querySelectorAll("#quick .chip").forEach(c => c.setAttribute("aria-current", c.dataset.name === it.n ? "true" : "false"));
+}
+
+function renderSeason() {
+  $("#tabs").innerHTML = CATS.map(c => `<button type="button" data-cat="${c}" aria-pressed="${c === seasonCat}">${c}</button>`).join("");
+  const list = items.filter(x => !x.imp && x.r != null && x.pct != null && x.sup >= 1.1 && x.r <= 1.0 && x.pct <= 0.75 && x.vol >= 1500 && (seasonCat === "全部" || x.c === seasonCat || (seasonCat === "根莖" && x.c === "辛香")))
+    .sort((a, b) => score(a) - score(b)).slice(0, 10);
+  $("#season").innerHTML = list.length ? list.map(x => `
+    <li><button type="button" data-name="${esc(x.n)}">
+      <b>${esc(x.n)}<span class="c">${x.c}</span></b>
+      <span class="p">${fmt(x.cur)}<small style="font-weight:400;color:var(--ink-3)"> ${uLabel()}</small></span>
+      <span class="why">到貨 <em>+${Math.round((x.sup - 1) * 100)}%</em>・比往年同期 <em>${pctTxt(x.r)}</em></span>
+    </button></li>`).join("") : `<li class="empty">這一類目前沒有明顯盛產的品項。</li>`;
+}
+
+function setUnit(u) {
+  unit = u;
+  try { localStorage.setItem("unit", u); } catch (e) {}
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.unit === u));
+  renderSeason();
+  if (current) render(current);
+}
+
+// 搜尋：常用名、農業部品名、俗名都能找到
+const baseName = n => n.replace("（進口）", "");
+// 品名本身一定要留著（「高麗菜（進口）」要能精準找到）；拆出來的官方品名片段才濾掉「進口」
+const index = items.map(x => ({ x, keys: [x.n, ...[baseName(x.n), ...baseName(x.n).split("・"), ...x.o.split(/[・\-\s]/),
+  ...x.o.split("・"), ...(ALIAS[baseName(x.n)] || [])].filter(k => k && !k.includes("進口"))] }));
+function match(q) {
+  q = q.trim();
+  if (!q) return [];
+  const exact = [], part = [];
+  index.forEach(({ x, keys }) => {
+    if (keys.some(k => k === q)) exact.push(x);
+    else if (keys.some(k => k.includes(q) || (q.length > 1 && q.includes(k)))) part.push(x);
+  });
+  // 同名時國產排前面，其餘依交易量（items 已照量排序）
+  const dom = a => a.filter(x => !x.imp).concat(a.filter(x => x.imp));
+  return dom(exact).concat(dom(part)).slice(0, 8);
+}
+let sel = 0, hits = [];
+function showSuggest() {
+  const ul = $("#suggest");
+  hits = match($("#q").value);
+  if (!hits.length) { ul.hidden = true; return; }
+  sel = Math.min(sel, hits.length - 1);
+  ul.innerHTML = hits.map((x, i) => `<li role="option" id="opt-${i}" data-name="${esc(x.n)}" aria-selected="${i === sel}"><span>${esc(x.n)}</span><small>${esc(x.o)}・${x.cur != null ? fmt(x.cur) + " " + uLabel() : "非產季"}</small></li>`).join("");
+  ul.hidden = false;
+}
+function pick(x) {
+  if (!x) return;
+  $("#q").value = "";
+  $("#suggest").hidden = true;
+  render(x);
+  const r = $("#result").getBoundingClientRect();
+  if (r.top < 0 || r.top > innerHeight * 0.6) $("#result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+$("#q").addEventListener("input", () => { sel = 0; showSuggest(); });
+$("#q").addEventListener("keydown", e => {
+  if ($("#suggest").hidden) return;
+  if (e.key === "ArrowDown") { sel = (sel + 1) % hits.length; showSuggest(); e.preventDefault(); }
+  if (e.key === "ArrowUp") { sel = (sel - 1 + hits.length) % hits.length; showSuggest(); e.preventDefault(); }
+  if (e.key === "Escape") $("#suggest").hidden = true;
+});
+$("#search").addEventListener("submit", e => {
+  e.preventDefault();
+  const h = match($("#q").value);
+  if (h.length) pick(h[Math.min(sel, h.length - 1)]);
+  else if ($("#q").value.trim()) {
+    $("#suggest").innerHTML = `<li aria-disabled="true"><span>找不到「${esc($("#q").value.trim())}」。這裡收的是農業部批發市場的蔬菜水果，試試別的叫法，例如「甘藍」或「高麗菜」</span></li>`;
+    $("#suggest").hidden = false;
+  }
+});
+$("#suggest").addEventListener("mousedown", e => { const li = e.target.closest("li[data-name]"); if (li) { e.preventDefault(); pick(byName[li.dataset.name]); } });
+$("#q").addEventListener("blur", () => setTimeout(() => $("#suggest").hidden = true, 120));
+$("#result").addEventListener("input", e => {
+  if (!current || !e.target.matches("#sp, #sw, #su")) return;
+  const v = stallInputs[current.n] || (stallInputs[current.n] = {});
+  v.p = $("#sp").value; v.w = $("#sw").value; v.u = $("#su").value;
+  updateStall(current);
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-name]");
+  if (b && !b.closest("#suggest")) pick(byName[b.dataset.name]);
+  const t = e.target.closest("#tabs button");
+  if (t) { seasonCat = t.dataset.cat; renderSeason(); }
+  const u = e.target.closest(".seg button");
+  if (u) setUnit(u.dataset.unit);
+});
+
+$("#quick").insertAdjacentHTML("beforeend", QUICK.filter(n => byName[n]).map(n => `<button type="button" class="chip" data-name="${n}">${n}</button>`).join(""));
+$("#asof").textContent = `農業部批發行情・資料日期 ${asof.getFullYear()}/${md(asof)}`;
+$("#snap").textContent = `這個 Demo 內含 ${DATA.asof} 抓取的資料快照（${items.length} 項蔬果，其中進口 ${items.filter(x => x.imp).length} 項；${DATA.from} 起的每日行情）；正式版可每天自動更新。`;
+document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.unit === unit));
+renderSeason();
+render(byName["大白菜"] || items[0]);
+let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => current && drawChart(current), 80); }).observe(document.body);
+</script>
