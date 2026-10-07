@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>貓咪帶路 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: one phone-sized 3D stage. UI floats over it: brand bar on top, price card over the basket, dock at the bottom.
+   Colours and faces are 這菜貴不貴's own tokens (site/index.html). */
+:root {
+  --bg: #F3F5F0; --surface: #FFFFFF; --surface-2: #E9EDE6;
+  --ink: #1B231E; --ink-2: #4B574F; --ink-3: #7A857D; --line: #D8DED4;
+  --accent: #2A4B9B; --accent-ink: #FFFFFF; --accent-soft: #E3E9F7;
+  --good: #1F7446; --good-bg: #E0F0E6; --ok: #4F6072; --ok-bg: #E6EBF0;
+  --warn: #A95F06; --warn-bg: #FAEBD2; --bad: #B8301F; --bad-bg: #FAE1DC;
+  --scene-sky: #EEF1E9; --scene-ground: #E1E7DA; --glass: rgba(255, 255, 255, .88); --shadow: rgba(27, 35, 30, .14);
+  --display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111613; --surface: #19201C; --surface-2: #222A25;
+    --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82; --line: #2D3731;
+    --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+    --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+    --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16;
+    --scene-sky: #1B231F; --scene-ground: #26302A; --glass: rgba(25, 32, 28, .9); --shadow: rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #19201C; --surface-2: #222A25;
+  --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82; --line: #2D3731;
+  --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+  --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+  --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16;
+  --scene-sky: #1B231F; --scene-ground: #26302A; --glass: rgba(25, 32, 28, .9); --shadow: rgba(0, 0, 0, .4);
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
+  display: flex; align-items: center; justify-content: center; gap: 48px;
+  padding-inline: 16px; padding-block: 16px; box-sizing: border-box; overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  position: relative; flex: 0 0 auto; width: min(100%, 420px); height: min(100%, 880px);
+  border-radius: 28px; overflow: hidden; background: var(--scene-sky);
+  box-shadow: 0 0 0 1px var(--line), 0 24px 60px var(--shadow);
+  user-select: none; -webkit-user-select: none;
+}
+#stage, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.bar {
+  position: absolute; top: 0; left: 0; right: 0; padding: 14px 14px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  pointer-events: none;
+}
+.bar > * { pointer-events: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px; border-radius: 999px; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); backdrop-filter: blur(8px); }
+.brand .mark { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font: 18px/1 var(--display); }
+.brand b { display: block; font: 16px/1.2 var(--display); }
+.brand small { display: block; color: var(--ink-2); font-size: 11.5px; letter-spacing: .04em; }
+.tools { display: flex; gap: 6px; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-size: 15px; display: grid; place-items: center; }
+.round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.cats { position: absolute; top: 70px; left: 14px; display: flex; gap: 6px; }
+.cat-chip {
+  display: flex; align-items: center; gap: 7px; padding: 5px 12px 5px 5px; border-radius: 999px; border: 1.5px solid transparent;
+  background: var(--glass); box-shadow: 0 2px 8px var(--shadow); font-size: 13px; font-weight: 500;
+}
+.cat-chip i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .12); }
+.cat-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent); }
+
+.price-card {
+  position: absolute; left: 14px; top: 112px; width: 184px; padding: 11px 13px 12px; border-radius: 16px;
+  background: var(--surface); box-shadow: 0 8px 26px var(--shadow); pointer-events: none;
+}
+.pc-where { color: var(--ink-3); font-size: 11.5px; letter-spacing: .04em; }
+.pc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pc-top b { font: 18px/1.2 var(--display); }
+.chip { padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+.pc-price { margin-top: 4px; display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.pc-price span:first-child { font: 26px/1.1 var(--display); }
+.pc-price span:last-child { color: var(--ink-2); font-size: 12px; }
+.pc-meta { color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.bubble {
+  position: absolute; left: 0; top: 0; padding: 6px 13px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 18px var(--shadow);
+  font: 16px/1.3 var(--display); white-space: nowrap; transform: translate(-50%, -100%); pointer-events: none;
+}
+
+.dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px 12px; display: grid; gap: 8px; pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.dock-row { display: flex; align-items: flex-end; gap: 10px; }
+#joy { position: relative; flex: 0 0 auto; width: 96px; height: 96px; border-radius: 50%; background: var(--glass); box-shadow: 0 2px 12px var(--shadow); touch-action: none; }
+#joy::before { content: ""; position: absolute; inset: 14px; border-radius: 50%; border: 1.5px dashed var(--line); }
+#knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: var(--accent); box-shadow: 0 3px 8px var(--shadow); }
+.actions { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.act { padding: 9px 4px; border-radius: 14px; border: 0; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-weight: 500; font-size: 13.5px; }
+.act[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.act.primary { grid-column: 1 / -1; background: var(--accent); color: var(--accent-ink); font: 15px/1.3 var(--display); padding: 11px 6px; }
+.hint { margin: 0; text-align: center; color: var(--ink-2); font-size: 11.5px; text-shadow: 0 1px 0 var(--scene-sky); }
+
+.marker-toast {
+  position: absolute; left: 50%; bottom: 168px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px);
+  padding: 8px 14px; border-radius: 14px; background: var(--ink); color: var(--bg); font-size: 13px; text-align: center;
+  opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+.marker-toast.show { opacity: 1; }
+
+#loading, #error { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; background: var(--scene-sky); }
+#loading b { font: 18px/1.3 var(--display); }
+#loading p, #error p { margin: 0; color: var(--ink-2); }
+
+.about { flex: 0 1 300px; min-width: 0; display: grid; gap: 12px; }
+.about h1 { margin: 0; font: 30px/1.2 var(--display); text-wrap: balance; }
+.about p { margin: 0; color: var(--ink-2); max-width: 34ch; }
+.about dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+.about dt { color: var(--ink-3); }
+.about dd { margin: 0; }
+.about .src { font-size: 12px; color: var(--ink-3); }
+@media (max-width: 820px) { .about { display: none; } }
+@media (max-width: 480px) {
+  body { padding: 0; }
+  #app { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) { .price-card, .marker-toast { transition: none; } }
+</style>
+</head>
+<body>
+<main id="app">
+  <div id="stage" aria-label="可旋轉的 3D 場景：貓咪和六籃蔬菜"></div>
+  <header class="bar">
+    <div class="brand"><span class="mark" aria-hidden="true">貴</span><div><b>這菜貴不貴</b><small>貓咪帶路・3D 試玩</small></div></div>
+    <div class="tools">
+      <button id="spin" class="round" aria-pressed="false" aria-label="鏡頭自動繞一圈">⟳</button>
+      <button id="recenter" class="round" aria-label="鏡頭回到預設位置">⌖</button>
+    </div>
+  </header>
+  <div id="cats" class="cats" role="radiogroup" aria-label="選擇貓咪"></div>
+  <div id="card" class="price-card" hidden>
+    <div class="pc-where">貓咪旁邊這一籃</div>
+    <div class="pc-top"><b id="pcName"></b><span id="pcChip" class="chip"></span></div>
+    <div class="pc-price"><span id="pcPrice"></span><span>元/公斤</span></div>
+    <div id="pcMeta" class="pc-meta"></div>
+  </div>
+  <div id="bubble" class="bubble" hidden>喵～</div>
+  <div id="toast" class="marker-toast" role="status" aria-live="polite"></div>
+  <div class="dock">
+    <div class="dock-row">
+      <div id="joy" role="group" aria-label="移動搖桿"><div id="knob"></div></div>
+      <div class="actions">
+        <button id="sit" class="act" aria-pressed="false">坐下</button>
+        <button id="roll" class="act" aria-pressed="false">翻肚</button>
+        <button id="pet" class="act">摸摸頭</button>
+        <button id="cheap" class="act primary">帶我找今天最划算的菜</button>
+      </div>
+    </div>
+    <p class="hint">拖曳畫面轉鏡頭・雙指或滾輪縮放・點地面讓貓走過去</p>
+  </div>
+  <div id="loading"><b>貓咪正在梳毛…</b><p>載入 3D 場景</p></div>
+  <div id="error" hidden role="alert"><b>3D 場景無法啟動</b><p>請換用支援 WebGL 的瀏覽器，或開啟硬體加速後重新整理。</p></div>
+</main>
+<aside class="about">
+  <h1>烏咪和 Mochi 會帶你逛菜</h1>
+  <p>兩隻貓都是用程式碼建出的原創 3D 模型，有一層層的毛、會眨眼、會甩尾巴。走到菜籃旁邊，就會跳出那樣菜今天貴不貴。</p>
+  <dl>
+    <dt>旋轉</dt><dd>拖曳畫面，或按 ⟳ 自動繞一圈</dd>
+    <dt>走動</dt><dd>搖桿、WASD／方向鍵，或直接點地面</dd>
+    <dt>動作</dt><dd>坐下、翻肚、摸摸頭；站著不動幾秒會自己坐下</dd>
+  </dl>
+  <p class="src">菜價是 site/data.json 在 2026-09-30 的批發價快照，判斷規則與這菜貴不貴相同：和往年同期中位數相比。</p>
+</aside>
+<script src="vendor/three.min.js"></script>
+<script src="cat-kit.js"></script>
+<script src="cats-demo.js"></script>
+</body>
+</html>

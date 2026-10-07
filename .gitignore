@@ -5,8 +5,7 @@ site/
 __pycache__/
 *.pyc
 
-# 未公開原型、內部規劃與工作紀錄
-/prototype-3d/
+# 內部規劃與工作紀錄（prototype-3d/ 改為納入版本控制；repo 為私人，公開網站只部署 site/）
 /docs/
 /.superpowers/
 /.agents/
