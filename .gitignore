@@ -4,3 +4,21 @@ site/
 .claude/
 __pycache__/
 *.pyc
+
+# 未公開原型、內部規劃與工作紀錄
+/prototype-3d/
+/docs/
+/.superpowers/
+/.agents/
+/.codex/
+*.log
+/ChatGPT*.png
+/private/
+/exports/
+
+# 憑證與本機設定；不影響已追蹤檔案
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
