@@ -1,48 +1,65 @@
-/* Original, code-built costumes. No external models or account storage. */
-window.createCuteWardrobe=function(T,{host,body,arms,legs,onOpen,onClose}){
-const styles=[...window.cityCatStyles,...window.cityDollStyles,
- {id:'explorer',icon:'🌻',name:'小小探險家',subtitle:'草帽 × 焦糖外套',description:'背著小背包，帶你慢慢發現城市裡的好食材。',bg:'#f0e2bf'},
- {id:'bunny',icon:'🐰',name:'草莓兔兔',subtitle:'長兔耳 × 奶油粉',description:'軟綿綿長耳朵，配上草莓小背包和圓圓棉花尾巴。',bg:'#f3dce4',coat:'#e7a8bc',hood:'#f5e4e2',inner:'#d98da9',bag:'#c76887'},
- {id:'bear',icon:'🐻',name:'蜂蜜熊熊',subtitle:'圓熊耳 × 蜂蜜黃',description:'圓滾滾的小熊帽，口袋裡好像藏著一罐蜂蜜。',bg:'#eedfc6',coat:'#dbac66',hood:'#b68961',inner:'#e9c599',bag:'#876744'},
- {id:'cat',icon:'🐱',name:'奶茶貓貓',subtitle:'三角耳 × 薰衣草紫',description:'翹翹貓耳和彎彎小尾巴，是巷弄裡最悠閒的買菜夥伴。',bg:'#e5def1',coat:'#b3a4ce',hood:'#eee0c8',inner:'#d2aab5',bag:'#8879a7'},
- {id:'frog',icon:'🐸',name:'青蛙雨衣',subtitle:'泡泡眼 × 薄荷綠',description:'穿上葉子色雨衣和小雨靴，晴天雨天都想出去逛逛。',bg:'#dbead7',coat:'#8bbd98',hood:'#91bc72',inner:'#cae2ac',bag:'#658d68'}
-];
-const original=[...body.children],originalArms=[...arms],originalLegs=[...legs],cache=new Map();let selected='explorer',open=false,oldSheet,previewFrame=0,previewGroup,previewRenderer,previewScene,previewCamera,angle=.22,walking=false,previewStart=0;
-function costume(s){if(s.cat)return window.createCityCat(T,s);if(s.doll)return window.createCityDoll(T,s);const root=new T.Group(),a=[],l=[];const mats={};function mat(c){return mats[c]||(mats[c]=new T.MeshStandardMaterial({color:c,roughness:.86}))}function mesh(g,c,x,y,z,p=root){const m=new T.Mesh(g,mat(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;p.add(m);return m}function sphere(r,c,x,y,z,p=root,sx=1,sy=1,sz=1){const m=mesh(new T.SphereGeometry(r,18,14),c,x,y,z,p);m.scale.set(sx,sy,sz);return m}function tube(rt,rb,h,c,x,y,z,p=root){return mesh(new T.CylinderGeometry(rt,rb,h,16),c,x,y,z,p)}
- tube(.38,.47,.77,s.coat,0,1.13,0);sphere(.4,s.coat,0,1.45,0);sphere(.53,s.hood,0,2.05,-.055);sphere(.405,'#f2cda6',0,2.01,.23,root,1,.96,.76);
- for(const x of [-.14,.14]){sphere(.041,'#47382e',x,2.05,.523);sphere(.012,'#fff9ed',x-.01,2.065,.558);sphere(.06,'#e6a39e',x*1.7,1.95,.465,root,1,.52,.26)}sphere(.038,'#e6b187',0,1.96,.54);const mouth=mesh(new T.TorusGeometry(.055,.011,6,12,Math.PI),'#885748',0,1.895,.532);mouth.rotation.z=Math.PI;
- tube(.13,.13,.56,s.coat,-.5,1.18,0);tube(.13,.13,.56,s.coat,.5,1.18,0);
- // Articulated sleeves and legs replace the two construction sleeves.
- root.children.slice(-2).forEach(m=>{root.remove(m);m.geometry.dispose()});
- for(const x of [-.49,.49]){const g=new T.Group();g.position.set(x,1.5,0);root.add(g);tube(.15,.125,.49,s.coat,0,-.24,0,g);sphere(.12,'#f2cda6',0,-.53,0,g);a.push(g)}
- for(const x of [-.2,.2]){const g=new T.Group();g.position.set(x,.83,0);root.add(g);tube(.15,.13,.53,s.id==='frog'?'#e7d88c':'#7c8596',0,-.26,0,g);sphere(.21,s.id==='frog'?'#e4c874':'#f7eee4',0,-.56,.08,g,.78,.52,1.25);l.push(g)}
- sphere(.26,s.bag,0,1.27,-.4,root,1.25,1.3,.6);tube(.025,.025,.56,s.bag,-.23,1.34,.27);tube(.025,.025,.56,s.bag,.23,1.34,.27);sphere(.065,'#fff0cf',0,1.19,.41);
- if(s.id==='bunny'){for(const x of [-.27,.27]){const e=sphere(.19,s.hood,x,2.74,-.055,root,1,2.3,.78);e.rotation.z=x>0?-.13:.13;const inner=sphere(.11,s.inner,x,2.76,.085,root,1,2.9,.3);inner.rotation.z=e.rotation.z}sphere(.18,'#fff2eb',0,.94,-.44);sphere(.12,'#769667',0,1.56,-.56,root,1,.5,.5)}
- if(s.id==='bear'){for(const x of [-.4,.4]){sphere(.23,s.hood,x,2.46,-.07);sphere(.135,s.inner,x,2.46,.11,root,1,1,.35)}sphere(.2,'#f1d8aa',0,1.09,.365,root,1,1.15,.28);sphere(.12,s.hood,0,.91,-.44)}
- if(s.id==='cat'){for(const x of [-.36,.36]){const e=mesh(new T.ConeGeometry(.23,.49,3),s.hood,x,2.58,-.05);e.rotation.y=Math.PI;const pink=mesh(new T.ConeGeometry(.12,.3,3),s.inner,x,2.61,.075);pink.rotation.y=Math.PI}const curve=new T.CatmullRomCurve3([new T.Vector3(0,.95,-.4),new T.Vector3(.35,.85,-.7),new T.Vector3(.68,1.04,-.68),new T.Vector3(.64,1.34,-.6)]);mesh(new T.TubeGeometry(curve,18,.085,8,false),s.hood,0,0,0)}
- if(s.id==='frog'){for(const x of [-.29,.29]){sphere(.23,s.hood,x,2.49,.02);sphere(.135,'#f7f1d8',x,2.51,.2,root,1,1,.42);sphere(.054,'#364d37',x,2.52,.263)}tube(.39,.56,.36,s.coat,0,.91,0);for(let y=1.02;y<1.5;y+=.18)sphere(.027,'#f5e4ad',0,y,.41)}
- sphere(.24,'#e8d5a1',0,-.85,.02,a[1],1,.9,.6);const handle=mesh(new T.TorusGeometry(.12,.022,6,12),'#a68d55',0,-.62,.02,a[1]);
- return {root,arms:a,legs:l};}
-function apply(id){const s=styles.find(v=>v.id===id)||styles[0];selected=s.id;body.clear();if(s.id==='explorer'){original.forEach(o=>body.add(o));arms.splice(0,2,...originalArms);legs.splice(0,2,...originalLegs)}else{if(!cache.has(s.id))cache.set(s.id,costume(s));const c=cache.get(s.id);[...c.root.children].forEach(o=>body.add(o));arms.splice(0,2,...c.arms);legs.splice(0,2,...c.legs)}
- // Store the live nodes before another costume is selected.
- if(s.id!=='explorer')cache.get(s.id).nodes=[...body.children];
- panel.querySelector('#wearAvatar').textContent=s.cat?'帶這隻去逛街 →':'穿這套去逛街 →';
- arms.forEach(o=>o.rotation.x=0);legs.forEach(o=>o.rotation.x=0);body.position.y=0;try{localStorage.setItem('veggie-avatar-v1',s.id)}catch(_){}trigger.textContent=s.icon+' 換角色';cards.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===s.id?'true':'false'));title.textContent=s.name;subtitle.textContent=s.subtitle;description.textContent=s.description;stage.style.background=s.bg;refreshPreview();}
-function choose(id){if(selected!=='explorer'&&cache.has(selected)){const c=cache.get(selected);c.nodes=[...body.children]}if(id!=='explorer'&&cache.has(id)){const c=cache.get(id);(c.nodes||[]).forEach(n=>c.root.add(n))}apply(id)}
-const trigger=document.createElement('button');trigger.id='avatarTrigger';trigger.textContent='🌻 換角色';host.appendChild(trigger);
-const panel=document.createElement('section');panel.id='wardrobe';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','avatarTitle');panel.innerHTML='<div class="wardrobe-head"><div><small>可愛衣櫥 · 原創 3D 角色</small><h2>今天想當哪一位？</h2></div><button id="closeWardrobe" aria-label="關閉角色衣櫥">✕</button></div><div id="avatarStage" aria-label="目前角色的立體預覽"></div><div class="preview-actions"><button id="avatarTurn">↻ 看背面</button><button id="avatarWalk" aria-pressed="false">試走幾步</button></div><h3 id="avatarTitle"></h3><p id="avatarSubtitle"></p><p id="avatarDescription"></p><div id="avatarCards" aria-label="角色選擇"></div><button id="wearAvatar">穿這套去逛街 →</button><small class="wardrobe-foot">所有造型皆可免費試穿；只記住這台裝置的選擇。</small>';host.appendChild(panel);
+/* 換角色: the twelve market folk (FigureKit, figure-cast.js) and the two cats 歐巴、波妞 (CatKit, cats.js).
+   Code-built models only; the choice is remembered on this device. */
+window.createCuteWardrobe=function(T,{host,body,onOpen,onClose}){
+const FK=window.FigureKit;
+// Wardrobe card copy for each figure: icon, subtitle, a line about them, and the preview backdrop.
+const FOLK={
+ grandma:['🛒','紫色漁夫帽 × 格紋菜籃車','推著菜籃車慢慢逛，每一攤的價錢她都記得清清楚楚。','#ece0f0'],
+ chief:['📣','紅背心 × 麥克風','拿著麥克風巡里，哪一攤今天特價，他最先知道。','#f3dcd8'],
+ mechanic:['🔧','連身工作服 × 活動扳手','機車行修到一半，趁空檔來市場買便當配菜。','#dbe3ea'],
+ grandpa:['🦯','米色襯衫 × 木頭拐杖','拄著拐杖散步到市場，一邊挑菜一邊跟老闆聊天。','#ebe3d6'],
+ courier:['🛵','青綠安全帽 × 外送保溫箱','送完一單，順手查一下今天的菜價。','#f5ead0'],
+ auntie:['🧺','捲捲燙髮 × 透明遮陽帽','提著綠色菜籃，最會比價也最會殺價。','#f6dfd6'],
+ uncle:['🍵','白色汗衫 × 保溫水壺','穿著藍白拖晃到市場，水壺裡裝著熱茶。','#dfe4ef'],
+ housewife:['🧹','格紋圍裙 × 雞毛撢子','打掃完家裡，拿著花布提袋出門補貨。','#e3eee4'],
+ griller:['🍢','深藍頭巾 × 烤肉夾','夜市烤肉攤老闆，白天先來挑最新鮮的肉。','#f3e0d2'],
+ kid:['🎒','黃色小帽 × 小熊背包','放學跟家人一起來買菜，最喜歡水果攤。','#f6efcf'],
+ taike:['🥤','金項鍊 × 藍白拖','穿著藍白拖來買飲料，順便幫媽媽買把蔥。','#e5e1dc'],
+ cook:['🍳','碎花頭巾 × 鍋鏟','自助餐阿姨一早來批菜，今天的青菜要炒三大盤。','#e2efe6']
+};
+const styles=[...Object.keys(FK.cast).map(id=>{const [icon,subtitle,description,bg]=FOLK[id]||['🙂',FK.cast[id].role,'',"#efe6dc"];return {id,icon,name:FK.cast[id].name,subtitle,description,bg}}),...window.cityCatStyles];
+const DEFAULT='grandma',cache=new Map(),previewKits=new Map();
+let selected=null,open=false,previewFrame=0,previewGroup,previewRenderer,previewScene,previewCamera,previewKit=null,previewLast=0,angle=.22,walking=false;
+function build(s){
+ if(s.cat){const c=window.createCityCat(T,s);c.cat=true;return c}
+ const fig=FK.create(T,s.id,{castShadow:true});fig.root.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ return {root:fig.root,kit:fig};
+}
+function apply(id){
+ const s=styles.find(v=>v.id===id)||styles.find(v=>v.id===DEFAULT);
+ if(selected&&cache.has(selected))body.remove(cache.get(selected).root);
+ selected=s.id;
+ if(!cache.has(s.id))cache.set(s.id,build(s));
+ body.add(cache.get(s.id).root);body.position.y=0;
+ try{localStorage.setItem('veggie-avatar-v1',s.id)}catch(_){}
+ panel.querySelector('#wearAvatar').textContent=s.cat?'帶這隻去逛街 →':'帶這位去逛街 →';
+ trigger.textContent=s.icon+' 換角色';
+ cards.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===s.id?'true':'false'));
+ title.textContent=s.name;subtitle.textContent=s.subtitle;description.textContent=s.description;stage.style.background=s.bg;
+ refreshPreview();
+}
+const trigger=document.createElement('button');trigger.id='avatarTrigger';trigger.textContent='🛒 換角色';host.appendChild(trigger);
+const panel=document.createElement('section');panel.id='wardrobe';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','avatarTitle');
+panel.innerHTML='<div class="wardrobe-head"><div><small>市場人物 · 原創 3D 角色</small><h2>今天想當哪一位？</h2></div><button id="closeWardrobe" aria-label="關閉角色選單">✕</button></div><div id="avatarStage" aria-label="目前角色的立體預覽"></div><div class="preview-actions"><button id="avatarTurn">↻ 看背面</button><button id="avatarWalk" aria-pressed="false">試走幾步</button></div><h3 id="avatarTitle"></h3><p id="avatarSubtitle"></p><p id="avatarDescription"></p><div id="avatarCards" aria-label="角色選擇"></div><button id="wearAvatar">帶這位去逛街 →</button><small class="wardrobe-foot">所有角色都能免費換；只記住這台裝置的選擇。</small>';
+host.appendChild(panel);
 const stage=panel.querySelector('#avatarStage'),cards=panel.querySelector('#avatarCards'),title=panel.querySelector('#avatarTitle'),subtitle=panel.querySelector('#avatarSubtitle'),description=panel.querySelector('#avatarDescription');
-styles.forEach(s=>{const b=document.createElement('button');b.dataset.id=s.id;b.setAttribute('aria-pressed','false');b.innerHTML='<span>'+s.icon+'</span><b>'+s.name+'</b><small>'+s.subtitle+'</small>';b.onclick=()=>choose(s.id);cards.appendChild(b)});
-function setupPreview(){if(previewRenderer)return;previewRenderer=new T.WebGLRenderer({antialias:true,alpha:true});previewRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));previewRenderer.outputColorSpace=T.SRGBColorSpace;previewRenderer.toneMapping=T.ACESFilmicToneMapping;previewRenderer.toneMappingExposure=1;stage.appendChild(previewRenderer.domElement);previewScene=new T.Scene();previewScene.add(new T.HemisphereLight(0xfff7e8,0x9caa98,2.5));const light=new T.DirectionalLight(0xfff4db,3);light.position.set(-3,5,6);previewScene.add(light);previewCamera=new T.PerspectiveCamera(34,1,.1,30);previewCamera.position.set(0,2.4,7.4);previewCamera.lookAt(0,1.7,0);const disk=new T.Mesh(new T.CylinderGeometry(.95,1,.12,48),new T.MeshStandardMaterial({color:'#fff4df'}));disk.position.y=.07;previewScene.add(disk);new ResizeObserver(()=>{if(open){sizePreview();renderPreview()}}).observe(stage)}
+styles.forEach(s=>{const b=document.createElement('button');b.dataset.id=s.id;b.setAttribute('aria-pressed','false');b.innerHTML='<span>'+s.icon+'</span><b>'+s.name+'</b><small>'+s.subtitle+'</small>';b.onclick=()=>apply(s.id);cards.appendChild(b)});
+function setupPreview(){if(previewRenderer)return;previewRenderer=new T.WebGLRenderer({antialias:true,alpha:true});previewRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));previewRenderer.outputColorSpace=T.SRGBColorSpace;previewRenderer.toneMapping=T.ACESFilmicToneMapping;previewRenderer.toneMappingExposure=1;stage.appendChild(previewRenderer.domElement);previewScene=new T.Scene();previewScene.add(new T.HemisphereLight(0xfff7e8,0x9caa98,2.5));const light=new T.DirectionalLight(0xfff4db,3);light.position.set(-3,5,6);previewScene.add(light);previewCamera=new T.PerspectiveCamera(34,1,.1,30);const disk=new T.Mesh(new T.CylinderGeometry(.95,1,.12,48),new T.MeshStandardMaterial({color:'#fff4df'}));disk.position.y=.06;previewScene.add(disk);new ResizeObserver(()=>{if(open){sizePreview();renderPreview()}}).observe(stage)}
 function sizePreview(){const r=stage.getBoundingClientRect();if(r.width&&r.height){previewRenderer.setSize(r.width,r.height);previewCamera.aspect=r.width/r.height;previewCamera.updateProjectionMatrix()}}
-let previewArms=[],previewLegs=[],previewKit=null,previewLast=0;const previewKits=new Map();function refreshPreview(){if(!open)return;setupPreview();const style=styles.find(s=>s.id===selected),isCat=style?.cat;previewCamera.position.set(0,isCat?2:2.4,isCat?6.5:7.4);previewCamera.lookAt(0,isCat?1.2:1.7,0);if(previewGroup)previewScene.remove(previewGroup);previewGroup=new T.Group();previewKit=null;previewArms=[];previewLegs=[];
- // Cats get their own CatKit instance here, so the preview can walk and blink without touching the city avatar.
- if(isCat){if(!previewKits.has(style.id))previewKits.set(style.id,window.createCityCat(T,style).kit);previewKit=previewKits.get(style.id);previewKit.setState('stand');previewGroup.add(previewKit.root)}else{const clone=body.clone(true);previewGroup.add(clone);previewArms=arms.map(o=>clone.children[body.children.indexOf(o)]);previewLegs=legs.map(o=>clone.children[body.children.indexOf(o)])}previewScene.add(previewGroup);sizePreview();renderPreview()}
+// The preview gets its own copy of the character, so it can turn and walk without touching the one in the city.
+function refreshPreview(){if(!open)return;setupPreview();const s=styles.find(v=>v.id===selected);if(previewGroup)previewScene.remove(previewGroup);previewGroup=new T.Group();previewGroup.position.y=.12;
+ if(!previewKits.has(s.id))previewKits.set(s.id,s.cat?window.createCityCat(T,s).kit:FK.create(T,s.id));previewKit=previewKits.get(s.id);
+ if(s.cat)previewKit.setState('stand');previewGroup.add(previewKit.root);previewScene.add(previewGroup);
+ const h=s.cat?2:previewKit.height();previewCamera.position.set(0,h*.62+.35,h*1.75+.9);previewCamera.lookAt(0,h*.5,0);sizePreview();renderPreview()}
 function renderPreview(){if(!previewGroup)return;previewGroup.rotation.y=angle;previewRenderer.render(previewScene,previewCamera)}
-function animate(now){if(!open)return;const phase=(now-previewStart)*.009;if(previewKit)previewKit.update(Math.min(.05,(now-(previewLast||now))/1000),{speed:walking?1.3:0,look:previewCamera.position});previewLast=now;previewLegs.forEach((o,i)=>{if(o)o.rotation.x=walking?Math.sin(phase+i*Math.PI)*.6:0});previewArms.forEach((o,i)=>{if(o)o.rotation.x=walking?-Math.sin(phase+i*Math.PI)*.48:0});previewGroup.position.y=walking&&!previewKit?Math.abs(Math.sin(phase))*.04:0;renderPreview();previewFrame=requestAnimationFrame(animate)}
-function show(){if(open)return;open=true;onOpen();panel.hidden=false;angle=.22;walking=false;panel.querySelector('#avatarWalk').setAttribute('aria-pressed','false');panel.querySelector('#avatarTurn').textContent='↻ 看背面';refreshPreview();previewStart=performance.now();previewFrame=requestAnimationFrame(animate);panel.querySelector('#closeWardrobe').focus()}
+function animate(now){if(!open)return;const dt=Math.min(.05,(now-(previewLast||now))/1000);previewLast=now;const s=styles.find(v=>v.id===selected);if(previewKit)previewKit.update(dt,s.cat?{speed:walking?1.3:0,look:previewCamera.position}:{speed:walking?3:0});renderPreview();previewFrame=requestAnimationFrame(animate)}
+function show(){if(open)return;open=true;onOpen();panel.hidden=false;angle=.22;walking=false;previewLast=0;panel.querySelector('#avatarWalk').setAttribute('aria-pressed','false');panel.querySelector('#avatarTurn').textContent='↻ 看背面';refreshPreview();previewFrame=requestAnimationFrame(animate);panel.querySelector('#closeWardrobe').focus()}
 function hide(){if(!open)return;open=false;cancelAnimationFrame(previewFrame);panel.hidden=true;onClose();trigger.focus()}
-trigger.onclick=show;panel.querySelector('#closeWardrobe').onclick=hide;panel.querySelector('#wearAvatar').onclick=hide;panel.querySelector('#avatarTurn').onclick=e=>{angle=angle<1?Math.PI+.22:.22;e.currentTarget.textContent=angle<1?'↻ 看背面':'↻ 看正面';renderPreview()};panel.querySelector('#avatarWalk').onclick=e=>{walking=!walking;e.currentTarget.setAttribute('aria-pressed',String(walking))};
+trigger.onclick=show;panel.querySelector('#closeWardrobe').onclick=hide;panel.querySelector('#wearAvatar').onclick=hide;
+panel.querySelector('#avatarTurn').onclick=e=>{angle=angle<1?Math.PI+.22:.22;e.currentTarget.textContent=angle<1?'↻ 看背面':'↻ 看正面';renderPreview()};
+panel.querySelector('#avatarWalk').onclick=e=>{walking=!walking;e.currentTarget.setAttribute('aria-pressed',String(walking))};
 panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();hide()}if(e.key==='Tab'){const buttons=[...panel.querySelectorAll('button')];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus()}}});
-let saved='explorer';try{saved=localStorage.getItem('veggie-avatar-v1')||saved}catch(_){}choose(saved);return {show,hide,active:()=>cache.get(selected)};
+// An avatar saved before this roster (the explorer, the costumes, the dolls) falls back to the default.
+let saved=DEFAULT;try{saved=localStorage.getItem('veggie-avatar-v1')||saved}catch(_){}apply(saved);
+return {show,hide,active:()=>cache.get(selected)};
 };
