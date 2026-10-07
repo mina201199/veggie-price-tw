@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hana 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Caveat:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: one phone-sized 3D stage beside the sheet's left column (a big handwritten "Hi!", the name, four keywords, the three style options). */
+:root {
+  --bg: #F4EEE8; --surface: #FCF9F6; --ink: #54443D; --ink-2: #86766E; --line: #E2D6CC;
+  --accent: #D98F9C; --accent-ink: #FFFFFF; --accent-soft: #F6E1E3;
+  --scene-sky: #F1EAE3; --scene-ground: #E8DED4; --glass: rgba(252, 249, 246, .9); --shadow: rgba(84, 68, 61, .14);
+  --display: "Fredoka", "Noto Sans TC", system-ui, sans-serif;
+  --script: "Caveat", "Segoe Print", cursive;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1E1A19; --surface: #2A2423; --ink: #F3E9E4; --ink-2: #C0B0A9; --line: #3B3230;
+    --accent: #EDA9B4; --accent-ink: #2B1A1D; --accent-soft: #3D2A2D;
+    --scene-sky: #29221F; --scene-ground: #322A26; --glass: rgba(42, 36, 35, .9); --shadow: rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1E1A19; --surface: #2A2423; --ink: #F3E9E4; --ink-2: #C0B0A9; --line: #3B3230;
+  --accent: #EDA9B4; --accent-ink: #2B1A1D; --accent-soft: #3D2A2D;
+  --scene-sky: #29221F; --scene-ground: #322A26; --glass: rgba(42, 36, 35, .9); --shadow: rgba(0, 0, 0, .4);
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
+  display: flex; align-items: center; justify-content: center; gap: 56px;
+  padding-inline: 16px; padding-block: 16px; box-sizing: border-box; overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  position: relative; flex: 0 0 auto; width: min(100%, 420px); height: min(100%, 880px);
+  border-radius: 28px; overflow: hidden; background: var(--scene-sky);
+  box-shadow: 0 0 0 1px var(--line), 0 24px 60px var(--shadow);
+  user-select: none; -webkit-user-select: none;
+}
+#stage, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.bar { position: absolute; top: 0; left: 0; right: 0; padding: 16px 16px 0; display: flex; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.brand b { display: flex; align-items: baseline; gap: 6px; font: 600 32px/1 var(--display); letter-spacing: .01em; }
+.brand b span { font-size: 20px; color: var(--accent); }
+.brand small { display: block; margin-top: 2px; color: var(--ink-2); font: 500 17px/1.2 var(--script); }
+.tools { display: flex; gap: 6px; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-size: 15px; display: grid; place-items: center; }
+.round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.mood {
+  position: absolute; top: 92px; left: 16px; padding: 2px 14px 4px; border-radius: 999px; background: var(--glass);
+  box-shadow: 0 2px 10px var(--shadow); font: 600 22px/1.3 var(--script); color: var(--ink); transition: opacity .25s;
+}
+.bubble {
+  position: absolute; left: 0; top: 0; padding: 6px 13px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 18px var(--shadow);
+  font: 500 15px/1.3 var(--body); white-space: nowrap; transform: translate(-50%, -100%); pointer-events: none;
+}
+
+.dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px 12px; display: grid; gap: 8px; pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.dock-row { display: flex; align-items: flex-end; gap: 10px; }
+#joy { position: relative; flex: 0 0 auto; width: 96px; height: 96px; border-radius: 50%; background: var(--glass); box-shadow: 0 2px 12px var(--shadow); touch-action: none; }
+#joy::before { content: ""; position: absolute; inset: 14px; border-radius: 50%; border: 1.5px dashed var(--line); }
+#knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: var(--accent); box-shadow: 0 3px 8px var(--shadow); }
+.actions { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.act {
+  display: grid; justify-items: center; gap: 1px; padding: 9px 4px 8px; border-radius: 16px; border: 0;
+  background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-weight: 500; font-size: 13.5px;
+}
+.act small { font: 600 15px/1 var(--script); color: var(--ink-2); }
+.act[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.act[aria-pressed="true"] small { color: var(--accent-ink); }
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 999px; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); }
+.sty { border: 0; border-radius: 999px; padding: 6px 4px; background: transparent; font: 600 12.5px/1.2 var(--display); color: var(--ink-2); white-space: nowrap; }
+.sty[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.hint { margin: 0; text-align: center; color: var(--ink-2); font-size: 11.5px; text-shadow: 0 1px 0 var(--scene-sky); }
+
+#loading, #error { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; background: var(--scene-sky); }
+#loading b { font: 600 28px/1.3 var(--display); }
+#loading p, #error p { margin: 0; color: var(--ink-2); }
+
+.about { flex: 0 1 300px; min-width: 0; max-height: 100%; overflow-y: auto; display: grid; gap: 12px; }
+.about .hi { margin: 0; font: 600 84px/.8 var(--script); color: var(--ink); }
+.about .hi span { font-size: 40px; color: var(--accent); }
+.about .script { margin: -4px 0 0; font: 500 26px/1.05 var(--script); color: var(--ink); transform: rotate(-3deg); transform-origin: left; }
+.about h1 { margin: 6px 0 0; display: flex; align-items: baseline; gap: 8px; font: 600 48px/1 var(--display); text-wrap: balance; }
+.about h1 span { font-size: 26px; color: var(--accent); }
+.about .tag { margin: -4px 0 0; color: var(--ink-2); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+.about p { margin: 0; color: var(--ink-2); max-width: 34ch; }
+.values { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
+.values li { display: grid; grid-template-columns: 36px 1fr; column-gap: 12px; align-items: center; }
+.values .ic { grid-row: span 2; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; }
+.values svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.values b { font: 600 14px/1.2 var(--display); letter-spacing: .01em; }
+.values small { font: 500 16px/1.1 var(--script); color: var(--ink-2); }
+.options { display: grid; gap: 6px; margin-top: 6px; }
+.options h2 { margin: 0; font: 500 11px/1.4 var(--body); letter-spacing: .24em; text-transform: uppercase; color: var(--ink-2); }
+.options ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.options li { padding: 6px 10px; border-radius: 12px; border: 1px solid transparent; }
+.options li[aria-current="true"] { border-color: var(--line); background: var(--surface); }
+.options b { font: 600 14px/1.3 var(--display); }
+.options li[aria-current="true"] b { color: var(--accent); }
+.options span { display: block; font-size: 12px; color: var(--ink-2); }
+@media (max-width: 820px) { .about { display: none; } }
+@media (max-width: 480px) {
+  body { padding: 0; }
+  #app { width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) { .mood { transition: none; } }
+</style>
+</head>
+<body>
+<main id="app">
+  <div id="stage" aria-label="可旋轉的 3D 場景：Hana 和貓咪"></div>
+  <header class="bar">
+    <div class="brand"><b>Hana <span aria-hidden="true">♡</span></b><small>Let's make a brighter day together!</small></div>
+    <div class="tools">
+      <button id="spin" class="round" aria-pressed="false" aria-label="鏡頭自動繞一圈">⟳</button>
+      <button id="recenter" class="round" aria-label="鏡頭回到預設位置">⌖</button>
+    </div>
+  </header>
+  <div id="mood" class="mood">Hi!</div>
+  <div id="bubble" class="bubble" hidden></div>
+  <div class="dock">
+    <div class="styles" role="group" aria-label="風格">
+      <button class="sty" data-style="chibi" aria-pressed="false">Chibi Plush</button>
+      <button class="sty" data-style="mascot" aria-pressed="true">App Mascot</button>
+      <button class="sty" data-style="semi" aria-pressed="false">Soft Semi-Real</button>
+    </div>
+    <div class="dock-row">
+      <div id="joy" role="group" aria-label="移動搖桿"><div id="knob"></div></div>
+      <div class="actions">
+        <button class="act" data-pose="wave" aria-pressed="false">打招呼<small>Hi!</small></button>
+        <button class="act" data-pose="peace" aria-pressed="false">比 YA<small>Playful</small></button>
+        <button class="act" data-pose="chin" aria-pressed="false">托腮<small>Gentle Smile</small></button>
+      </div>
+    </div>
+    <p class="hint">拖曳畫面轉鏡頭・雙指或滾輪縮放・點地面讓 Hana 走過去</p>
+  </div>
+  <div id="loading"><b>Hana</b><p>正在整理瀏海…</p></div>
+  <div id="error" hidden role="alert"><b>3D 場景無法啟動</b><p>請換用支援 WebGL 的瀏覽器，或開啟硬體加速後重新整理。</p></div>
+</main>
+<aside class="about">
+  <p class="hi">Hi! <span aria-hidden="true">♡</span></p>
+  <p class="script">Let's make a brighter day together!</p>
+  <h1>Hana <span aria-hidden="true">♡</span></h1>
+  <p class="tag">Cute · Friendly · Positive</p>
+  <p>照第二張角色設定圖建的 3D 角色：黑色鮑伯頭、粉色連帽外套，包包上掛著小貓吊飾。三個按鈕是設定圖上的三個動作，貓咪 Mochi 會跟在旁邊。下方可以切換設定圖上的三種風格。</p>
+  <ul class="values" aria-label="Hana 的四個關鍵字">
+    <li><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><b>Kind Mind</b><small>A little kinder every day</small></li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg></span><b>Bright Days</b><small>Small steps, big happiness</small></li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18C6 10 11 5 19 5c0 8-5 13-13 13zM6 18l7-7"/></svg></span><b>Better You</b><small>Progress feels good</small></li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M3.5 19c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5M14.5 14.2c.6-.3 1.3-.4 2-.4 2.5 0 4 1.8 4 4.4"/></svg></span><b>Together</b><small>A more colorful tomorrow</small></li>
+  </ul>
+  <section class="options" aria-labelledby="opt-h">
+    <h2 id="opt-h">Style options</h2>
+    <ol>
+      <li data-style-item="chibi" aria-current="false"><b>Chibi Plush</b><span>大頭短身、線條簡單，適合做 icon 和周邊</span></li>
+      <li data-style-item="mascot" aria-current="true"><b>App Mascot</b><span>親切好用，最適合放在 app 裡</span></li>
+      <li data-style-item="semi" aria-current="false"><b>Soft Semi-Real</b><span>細節多、自然溫暖，適合說故事</span></li>
+    </ol>
+  </section>
+</aside>
+<script>
+  window.GIRL_DEMO = {
+    look: 'hana', name: 'Hana', tap: ['wave', 'peace'],
+    moods: { idle: 'Hi!', wave: 'Hi! ♡', peace: 'Playful', chin: 'Gentle Smile' },
+    lines: { wave: '今天一起去市場吧！', peace: 'YA！今天也要開心', chin: '慢慢來，一步一步就好' }
+  };
+</script>
+<script src="vendor/three.min.js"></script>
+<script src="cat-kit.js"></script>
+<script src="lumi-kit.js"></script>
+<script src="lumi-demo.js"></script>
+</body>
+</html>
