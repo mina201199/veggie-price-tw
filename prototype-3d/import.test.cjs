@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict'),N=require('./notes-store.js');
+const mem={value:null,getItem(){return this.value},setItem(k,v){this.value=v}};
+const s=N.createStore(mem),n={venue:'測試攤',product:'菜',price:20,date:'2026-10-07',quantity:null};
+const a=s.save(n);s.save({...n,price:25},a.id);const backup=s.exportJSON();
+assert.equal(typeof s.importJSON,'function');
+const targetMem={...mem,value:null},target=N.createStore(targetMem);
+target.save({...n,product:'原本的筆記'});
+assert.deepEqual(target.importJSON(backup,true),{added:1,updated:0,skipped:0});
+assert.equal(target.load().length,1,'preview cannot write');
+target.importJSON(backup);assert.equal(target.load().length,2);
+assert.equal(target.load()[1].versions.length,2);
+assert.deepEqual(target.importJSON(backup),{added:0,updated:0,skipped:1});
+s.save({...n,price:30},a.id);target.importJSON(s.exportJSON());assert.equal(target.load()[1].versions.length,3);
+assert.deepEqual(target.importJSON(backup),{added:0,updated:0,skipped:1},'older backup cannot replace newer local history');
+const before=target.exportJSON(),conflict=JSON.parse(backup);conflict.records[0].versions[0].price=999;
+assert.throws(()=>target.importJSON(JSON.stringify(conflict)),/衝突/);assert.equal(target.exportJSON(),before);
+for(const invalid of ['bad','null','{"schema":2,"records":[]}',JSON.stringify({schema:1,records:[{id:'x',createdAt:'bad',versions:[n]}]})]){assert.throws(()=>target.importJSON(invalid));assert.equal(target.exportJSON(),before);}
+const duplicate=JSON.parse(backup);duplicate.records.push(duplicate.records[0]);assert.throws(()=>target.importJSON(JSON.stringify(duplicate)));
+const quota=N.createStore({getItem(){return null},setItem(){throw Error('quota')}});assert.throws(()=>quota.importJSON(backup));
+console.log('PASS: import preview, merge, deduplication, revisions, conflicts, invalid backup and write failure');
