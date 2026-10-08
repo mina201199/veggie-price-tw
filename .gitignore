@@ -12,6 +12,9 @@ __pycache__/
 /.codex/
 *.log
 /ChatGPT*.png
+# 角色設定參考圖與開發時的截圖（程式都沒有引用）
+/image/
+/prototype-3d/*.png
 /private/
 /exports/
 

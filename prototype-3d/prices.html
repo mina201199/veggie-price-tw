@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f8ef"><title>今日菜價 · 這菜貴不貴</title><link rel="stylesheet" href="prices.css"><script defer src="prices-core.js"></script><script defer src="prices-ui.js"></script></head>
+<body><main>
+<header><a class="brand" href="prices.html"><span>青</span> 這菜貴不貴<small>DAILY MARKET</small></a><span class="public">免登入查詢</span></header>
+<section class="hero"><div class="eyebrow">每日行情・安心做功課</div><h1>今天買菜，<br>心裡先有個底。</h1><p>看看行情，再決定今天煮什麼。</p><div class="produce" aria-hidden="true">🥬<span>🍅</span></div></section>
+<section class="data-info"><div><span class="dot"></span><strong id="dataDate">正在讀取行情…</strong></div><p id="dataScope">農業部批發行情 · 新臺幣／公斤</p><small id="generated"></small></section>
+<section class="search-area"><label for="foodSearch">你今天想買什麼？</label><div class="search-box"><span aria-hidden="true">⌕</span><input type="search" id="foodSearch" placeholder="搜尋高麗菜、番茄、芭樂…" autocomplete="off"><button id="clearSearch" aria-label="清除搜尋">✕</button></div><div class="popular">常查食材 <button data-search="高麗菜">高麗菜</button><button data-search="小黃瓜">小黃瓜</button><button data-search="番茄">番茄</button></div></section>
+<nav class="filters" aria-label="食材分類"><button class="selected" aria-pressed="true">全部</button><button aria-pressed="false">葉菜</button><button aria-pressed="false">瓜果豆</button><button aria-pressed="false">根莖</button><button aria-pressed="false">菇類</button><button aria-pressed="false">水果</button><button aria-pressed="false">其他蔬菜</button></nav>
+<div class="list-head"><h2>今日菜價</h2><span id="count" role="status" aria-live="polite"></span></div>
+<div class="sort-row"><label for="priceSort">快速排序</label><select id="priceSort" aria-describedby="sortHint"><option value="default">預設排序</option><option value="asc">最便宜 → 最貴</option><option value="desc">最貴 → 最便宜</option></select></div>
+<p id="sortHint" class="sort-hint">依每公斤批發價排序，超過 7 天的歷史報價置底。</p>
+<p class="list-hint">同一食材不同品種分開看；判斷相對往年同期。</p>
+<div id="error" role="alert" hidden><p>行情載入失敗，請確認連線後再試。不會使用示範數字代替。</p><button id="retry">重新載入</button></div><div id="cards" aria-busy="true"><p>正在整理食材行情…</p></div><button id="more" hidden>顯示更多食材</button>
+<aside class="notice"><b>批發價 ≠ 攤商售價</b><p>這裡是全臺回報市場的批發加權均價，不是特定店家報價。市場組成、品質與運輸成本都會影響價格，不能據此判定商家不合理。</p></aside>
+<details class="method"><summary>資料與「貴不貴」怎麼看？</summary><p>最新價是該品種最後一個有交易紀錄日期的均價，不是五日平滑價。比較同一作物代號及官方品名、同樣全臺彙整範圍與每公斤單位。</p><p>取該交易日往前五年、各年同日期前後 15 日的每日均價中位數。至少需要 20 個日紀錄、涵蓋 2 年；低於基準 12% 標為偏低，高於 12% 標為偏高，其餘接近常態。超過 7 天未有紀錄不給行情判斷。</p><p>各日有回報的市場組合可能不同，價格差異不全是漲跌。本機版本是資料快照，不會由瀏覽器即時抓取；「重新載入」只重新讀取目前快照。分析是規則計算，未使用 LLM 或預測價格。</p></details>
+<footer><a href="https://data.moa.gov.tw/" target="_blank" rel="noopener">資料來源：農業部農業資料開放平臺 ↗</a><p>先了解行情，買菜更有方向。</p></footer>
+</main><nav class="bottom-nav" aria-label="主要功能"><a class="active" aria-current="page" href="prices.html">▤<span>今日菜價</span></a><a href="notebook.html">▧<span>採買筆記</span></a><a href="index.html">⌂<span>城市探索</span></a></nav>
+<dialog id="detail" aria-labelledby="detailTitle"><div class="dialog-top"><span>食材行情詳情</span><button id="closeDetail" aria-label="關閉行情詳情">✕</button></div><div id="detailBody"></div></dialog>
+</body></html>
