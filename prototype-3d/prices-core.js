@@ -28,5 +28,23 @@
     for(const x of items)if(x.name===name&&!imported(x)&&(!best||x.date>best.date||(x.date===best.date&&x.volume>best.volume)))best=x;
     return best;
   }
-  return {assess,search,sortPrices,bestDeals,pickVariety};
+  // 攤販賣多少：價格換成元/台斤（1 台斤 = 600 公克）。
+  function perJin(price,quantity,unit){
+    const jin={'台斤':1,'公斤':1/.6,'公克':1/600}[unit]*quantity;
+    return price>0&&jin>0&&Number.isFinite(jin)?price/jin:null;
+  }
+  // 跟一般零售範圍（tools/build.py 的 retail_estimate）比；門檻與公開網站的「攤販賣多少」相同（tools/template.html stallVerdict）。
+  // marketTone 是這樣菜批發行情的判斷（assess 的 tone），用來補一句「是批發本來就貴」之類的說明。
+  function judgeStall(re,pJin,marketTone){
+    const r=pJin/re.est,up=Math.round((r-1)*100),down=Math.round((1-r)*100);
+    const s=pJin<re.lo?{tone:'good',label:'划算',text:`比一般行情便宜約 ${down}%，可以買`,note:''}
+      :pJin<=re.hi?{tone:'ok',label:'合理',text:'在一般零售行情內',note:''}
+      :pJin<=re.hi*1.2?{tone:'warn',label:'偏貴',text:`比一般行情高約 ${up}%`,note:'可以比比看別攤，或問老闆能不能算便宜一點。'}
+      :{tone:'bad',label:'太貴',text:`比一般行情高約 ${up}%`,note:'建議換一攤，或換別的菜。'};
+    if(pJin<re.est*.5)s.note='便宜很多，留意一下新鮮度，或是不是次級品、剩貨出清。';
+    else if(s.tone==='ok'&&marketTone==='high')s.note='攤販沒有亂開價，是這陣子批發本來就貴；想省可以看看公佈欄上划算的菜。';
+    else if((s.tone==='warn'||s.tone==='bad')&&marketTone==='low')s.note='批發其實正便宜，這攤開得偏高，'+s.note;
+    return Object.assign(s,{pJin});
+  }
+  return {assess,search,sortPrices,bestDeals,pickVariety,perJin,judgeStall};
 });

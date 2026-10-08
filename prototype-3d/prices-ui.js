@@ -43,13 +43,42 @@ function openDetail(x){
   const price=el('div',`$${money(x.price)} `,'detail-price');price.append(el('small','元／公斤'));body.append(price,el('p',`交易日期 ${x.date} · 當日加權均價${state.stale?'（歷史報價）':''}`,'sub'));
   let text=state.stale?'超過 7 天沒有較新交易紀錄，這筆價格只供歷史參考，暫不判斷現在貴不貴。':state.ratio===null?'往年同期的可用紀錄不足，暫不判斷貴不貴。':`這個品種的最新批發均價，比往年同期中位數${delta(x.price,x.baseline)}，屬於「${state.label}」。`;
   if(!state.stale&&x.recent>0)text+=` 相較此交易日前 7 天的交易量加權均價${delta(x.price,x.recent)}。`;
-  body.append(el('p',text,'analysis'));
+  body.append(el('p',text,'analysis'),stallSection(x,state));
   const stats=el('div',undefined,'stats');
   for(const [label,value,note]of [['往年同期中位數',x.baseline,`${x.historyCount} 個日紀錄 · ${x.historyYears} 年`],['交易日前 7 天均價',x.recent,`${x.recentCount} 個交易日 · 不含當日`]]){const s=el('div',label);s.append(el('b',value===null?'資料不足':`$${money(value)}`),el('span',note));stats.append(s);}
   body.append(stats,el('h3','最近 30 日交易價 · 元／公斤','chart-heading'),chart(x),el('p','每個點代表有交易紀錄的日期；連線不代表中間日期有報價。','sub'));
   const tableDetails=el('details'),table=el('table'),head=el('thead'),headrow=el('tr');headrow.append(el('th','交易日期'),el('th','元／公斤'));head.append(headrow);table.append(head);const tbody=el('tbody');for(const p of [...x.series].reverse()){const row=el('tr');row.append(el('td',p.date),el('td',money(p.price)));tbody.append(row);}table.append(tbody);tableDetails.append(el('summary','查看每日數值'),table);body.append(tableDetails,el('p',`${dataset.scope}。每日市場回報組合可能不同，僅供行情參考，不代表任何攤商的實際售價。`,'sub'));
   $('detail').showModal();$('detail').scrollTop=0;
   document.dispatchEvent(new CustomEvent('prices:open',{detail:x}));
+}
+// 攤販賣多少：輸入攤販開的價格和重量，跟一般零售範圍（以常用名計，tools/build.py 估的）比。只在本機計算。
+const ym=s=>`${s.slice(0,4)}/${+s.slice(5,7)}`;
+function stallSection(x,state){
+  const box=el('section',undefined,'stall'),re=dataset.retail&&dataset.retail[x.name];
+  box.append(el('h3','攤販賣多少？幫你看合不合理'));
+  if(!re){box.append(el('p','最近批發市場沒有這樣菜的行情，沒辦法估一般零售價。','sub'));return box;}
+  const row=el('div',undefined,'stall-row'),price=document.createElement('input'),qty=document.createElement('input'),unit=document.createElement('select');
+  Object.assign(price,{type:'number',min:'0',step:'1',inputMode:'decimal',placeholder:'例如 60'});Object.assign(qty,{type:'number',min:'0',step:'0.1',inputMode:'decimal',value:'1'});
+  for(const u of ['台斤','公斤','公克'])unit.append(new Option(u,u));
+  price.setAttribute('aria-label','攤販開的價格（元）');qty.setAttribute('aria-label','重量');unit.setAttribute('aria-label','重量單位');
+  const lp=el('label','價格 '),lq=el('label','重量 ');lp.append(price,document.createTextNode(' 元'));lq.append(qty,unit);row.append(lp,lq);
+  const out=el('div',undefined,'stall-out');out.setAttribute('aria-live','polite');
+  const range=`一般零售大約 ${Math.round(re.lo)}–${Math.round(re.hi)} 元／台斤（約 ${Math.round(re.lo/.6)}–${Math.round(re.hi/.6)} 元／公斤）`;
+  function update(){
+    out.replaceChildren();
+    const pJin=Prices.perJin(Number(price.value),Number(qty.value),unit.value);
+    if(pJin===null){out.className='stall-out';out.append(el('span',`行情參考：${range}。`));return;}
+    const v=Prices.judgeStall(re,pJin,state.tone);
+    out.className=`stall-out s-${v.tone}`;
+    out.append(el('span',v.label,'stall-pill'),el('span',`你看到的是約 ${Math.round(pJin)} 元／台斤，${v.text}。`),el('small',`${range}。${v.note}`));
+  }
+  for(const i of [price,qty,unit])i.addEventListener('input',update);
+  update();
+  const src=dataset.retailSource,how=re.src==='item'?`依臺北市公有零售市場 ${ym(src.from)}–${ym(src.to)} 共 ${re.months} 個月的零售價，對照同月批發價推算，平均誤差約 ±${Math.round(re.err*100)}%。`
+    :re.src==='twin'?`臺北市零售行情沒有分進口，這裡借用國產${re.twin}的零售和批發關係推算，參考就好。`
+    :'臺北市零售行情沒有這一項，用同類菜的平均加價倍數估計，範圍放得比較寬，參考就好。';
+  box.append(row,out,el('p',`以「${x.name}」所有品種合計的近 14 天批發價估計。${how}一般零售範圍只是參考，不代表任何攤商的實際售價。`,'sub'));
+  return box;
 }
 function showDeals(items,title,empty){mode={items,title,empty};limit=24;render();}
 function showAll(){mode=null;limit=24;render();}

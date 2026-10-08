@@ -4,7 +4,8 @@
     讀 data/raw/*.json（fetch.py 的月檔），寫出 prototype-3d/prices-data.json；不抓資料、不補價。
 
 和公開網站刻意不同的地方：每個品種各自一列，顯示最後交易日的當日價（不平滑）。
-名稱、分類、哪些不收、往年同期怎麼算，都跟公開網站共用 catalog.py。
+名稱、分類、哪些不收、往年同期怎麼算，都跟公開網站共用 catalog.py；
+「攤販賣多少」的零售估計直接用公開網站的計算（build.py），以常用名為鍵放在 retail。
 """
 import datetime as dt
 import json
@@ -13,6 +14,7 @@ import pathlib
 import re
 import sys
 
+import build as site_build  # 公開網站的計算（build.py）
 from catalog import SEARCH_ALIASES, classify, parse, same_period_baseline
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -84,12 +86,29 @@ def build(raw, today):
             "items": items}
 
 
+def retail_map(items):
+    """公開網站的品項 -> 首頁「攤販賣多少」要的零售估計（元/台斤），以常用名為鍵；估不出來的不列."""
+    out = {}
+    for x in items:
+        e = site_build.retail_estimate(x)
+        if e:
+            rm = x["rm"]
+            out[x["n"]] = dict({k: round(v, 2) for k, v in e.items()}, src=rm["src"], err=rm["err"], months=rm["n"],
+                               twin=x.get("tw") if rm["src"] == "twin" else None)
+    return out
+
+
 def main():
     today = sys.argv[1] if len(sys.argv) > 1 else dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).date().isoformat()
     data = build(load_raw(), today)
+    retail = json.loads(site_build.RETAIL.read_text(encoding="utf-8")) if site_build.RETAIL.exists() else None
+    if retail is not None:
+        day = dt.date.fromisoformat(today)
+        public = site_build.summarize(site_build.load_raw(day), day, retail)
+        data["retail"], data["retailSource"] = retail_map(public["items"]), public["retail"]
     data["generatedAt"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"{len(data['items'])} 個品種；最新交易日 {data['latest']}，分析日 {today}")
+    print(f"{len(data['items'])} 個品種；最新交易日 {data['latest']}，分析日 {today}；零售估計 {len(data.get('retail', {}))} 種")
 
 
 if __name__ == "__main__":

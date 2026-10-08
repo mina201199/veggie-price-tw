@@ -193,6 +193,19 @@ dialog::backdrop { background: rgba(20, 30, 24, .45); backdrop-filter: blur(3px)
 table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 12px; }
 td, th { padding: 7px; text-align: left; border-bottom: 1px solid var(--line); }
 summary { cursor: pointer; padding: 8px 0; font-size: 13px; }
+/* 攤販賣多少 (prices-ui.js stallSection) */
+.stall { margin: 14px 0; padding: 14px; border-radius: 14px; border: 1px solid var(--line); }
+.stall h3 { margin: 0 0 10px; font-size: 15px; }
+.stall-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 14px; }
+.stall-row input { width: 84px; min-height: 40px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 16px; }
+.stall-row select { min-height: 40px; margin-left: 4px; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; }
+.stall-out { display: grid; gap: 4px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.6; }
+.stall-out small { color: var(--ink-2); font-size: 12px; }
+.stall-pill { justify-self: start; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--surface); }
+.s-good { background: var(--good-bg); } .s-good .stall-pill { color: var(--good); }
+.s-ok { background: var(--ok-bg); } .s-ok .stall-pill { color: var(--ok); }
+.s-warn { background: var(--warn-bg); } .s-warn .stall-pill { color: var(--warn); }
+.s-bad { background: var(--bad-bg); } .s-bad .stall-pill { color: var(--bad); }
 
 .about { flex: 0 1 300px; min-width: 0; display: grid; gap: 12px; }
 .about h1 { margin: 0; font: 30px/1.2 var(--display); text-wrap: balance; }
