@@ -77,8 +77,10 @@
   const figs = {};
   function get(id) {
     if (!figs[id]) {
-      const f = FK.create(T, id, { castShadow: true });
+      const GLB = window.FigureGLB, f = (GLB && GLB.has(id) ? GLB : FK).create(T, id, { castShadow: true });
       f.root.traverse(o => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; });
+      // A Blender model swaps in once its GLB has loaded: retake the card picture then.
+      if (f.ready) f.ready.then(() => { thumbnail(id); if (next >= ids.length) releaseThumbs(); });
       const holder = new T.Group(), base = new T.Mesh(baseGeo, baseMat);
       base.receiveShadow = true; base.castShadow = true;
       holder.add(base);

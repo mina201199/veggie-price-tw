@@ -1,7 +1,8 @@
-/* 換角色: the twelve market folk (FigureKit, figure-cast.js) and the three cats 歐巴、波妞、小橘 (CatKit, cats.js).
-   Code-built models only; the choice is remembered on this device. */
+/* 換角色: the twelve market folk (FigureKit, figure-cast.js; the ones modelled in Blender come from FigureGLB, figure-glb.js)
+   and the three cats 歐巴、波妞、小橘 (CatKit, cats.js). The choice is remembered on this device. */
 window.createCuteWardrobe=function(T,{host,body,onOpen,onClose}){
-const FK=window.FigureKit;
+const FK=window.FigureKit,GLB=window.FigureGLB;
+const figure=(id,opts)=>(GLB&&GLB.has(id)?GLB:FK).create(T,id,opts);
 // Wardrobe card copy for each figure: icon, subtitle, a line about them, and the preview backdrop.
 const FOLK={
  grandma:['🛒','紫色漁夫帽 × 格紋菜籃車','推著菜籃車慢慢逛，每一攤的價錢她都記得清清楚楚。','#ece0f0'],
@@ -22,7 +23,7 @@ const DEFAULT='grandma',cache=new Map(),previewKits=new Map();
 let selected=null,open=false,previewFrame=0,previewGroup,previewRenderer,previewScene,previewCamera,previewKit=null,previewLast=0,angle=.22,walking=false;
 function build(s){
  if(s.cat){const c=window.createCityCat(T,s);c.cat=true;return c}
- const fig=FK.create(T,s.id,{castShadow:true});fig.root.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ const fig=figure(s.id,{castShadow:true});fig.root.traverse(o=>{if(o.isMesh)o.castShadow=true});
  return {root:fig.root,kit:fig};
 }
 function apply(id){
@@ -48,7 +49,7 @@ function setupPreview(){if(previewRenderer)return;previewRenderer=new T.WebGLRen
 function sizePreview(){const r=stage.getBoundingClientRect();if(r.width&&r.height){previewRenderer.setSize(r.width,r.height);previewCamera.aspect=r.width/r.height;previewCamera.updateProjectionMatrix()}}
 // The preview gets its own copy of the character, so it can turn and walk without touching the one in the city.
 function refreshPreview(){if(!open)return;setupPreview();const s=styles.find(v=>v.id===selected);if(previewGroup)previewScene.remove(previewGroup);previewGroup=new T.Group();previewGroup.position.y=.12;
- if(!previewKits.has(s.id))previewKits.set(s.id,s.cat?window.createCityCat(T,s).kit:FK.create(T,s.id));previewKit=previewKits.get(s.id);
+ if(!previewKits.has(s.id))previewKits.set(s.id,s.cat?window.createCityCat(T,s).kit:figure(s.id));previewKit=previewKits.get(s.id);
  if(s.cat)previewKit.setState('stand');previewGroup.add(previewKit.root);previewScene.add(previewGroup);
  const h=s.cat?2:previewKit.height();previewCamera.position.set(0,h*.62+.35,h*1.75+.9);previewCamera.lookAt(0,h*.5,0);sizePreview();renderPreview()}
 function renderPreview(){if(!previewGroup)return;previewGroup.rotation.y=angle;previewRenderer.render(previewScene,previewCamera)}
