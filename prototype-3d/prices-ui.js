@@ -1,6 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id);
-let dataset=null,category='全部',limit=24;
+let dataset=null,category='全部',limit=24,mode=null;// mode: a fixed list such as today's best deals, instead of search results
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const money=n=>Number.isFinite(n)?n.toFixed(1):'—';
 const delta=(a,b)=>`${a>=b?'高':'低'} ${Math.abs((a/b-1)*100).toFixed(0)}%`;
@@ -8,15 +8,18 @@ function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefine
 function icon(x){if(/甘藍|包心|白菜|萵苣/.test(x.official))return '🥬';if(/番茄/.test(x.official))return '🍅';if(/胡蘿蔔/.test(x.official))return '🥕';if(/香蕉/.test(x.official))return '🍌';if(/茄子/.test(x.official))return '🍆';if(/玉米/.test(x.official))return '🌽';return {'葉菜':'🥬','辛香':'🧄','瓜果豆':'🥒','根莖':'🥔','菇類':'🍄','水果':'🍊'}[x.category]||'🌱';}
 function render(){
   if(!dataset)return;
-  const results=Prices.sortPrices(Prices.search(dataset.items,$('foodSearch').value,category),$('priceSort').value,today());
-  $('count').textContent=`${results.length} 個品項／品種`;
+  const results=mode?mode.items:Prices.sortPrices(Prices.search(dataset.items,$('foodSearch').value,category),$('priceSort').value,today());
+  $('count').textContent=mode?`${results.length} 種`:`${results.length} 個品項／品種`;
+  if($('listTitle'))$('listTitle').textContent=mode?mode.title:'今日菜價';
   $('cards').replaceChildren();
-  if(!results.length){$('cards').append(el('p','找不到這個食材，試試其他名稱或切換「全部」。目前只收錄蔬菜水果，沒有肉品或海鮮行情。','empty'));}
+  if(mode){const back=el('button','← 回到全部菜價','back-all');back.type='button';back.addEventListener('click',showAll);$('cards').append(back);if(!results.length)$('cards').append(el('p',mode.empty,'empty'));}
+  else if(!results.length){$('cards').append(el('p','找不到這個食材，試試其他名稱或切換「全部」。目前只收錄蔬菜水果，沒有肉品或海鮮行情。','empty'));}
   for(const x of results.slice(0,limit)){
     const state=Prices.assess(x,today()),card=el('button',undefined,'card');card.type='button';
     card.setAttribute('aria-label',`${x.name}，${x.official}，${x.price}元每公斤，${state.label}，查看詳情`);
     const emoji=el('span',icon(x),'food-icon');emoji.setAttribute('aria-hidden','true');
-    const copy=el('div');copy.append(el('h3',x.name),el('small',x.official),el('small',`${x.date} · ${state.stale?'歷史報價':'最新交易日'}`));
+    const when=mode&&state.ratio!==null?`比往年同期低 ${Math.round((1-state.ratio)*100)}%`:`${x.date} · ${state.stale?'歷史報價':'最新交易日'}`;
+    const copy=el('div');copy.append(el('h3',x.name),el('small',x.official),el('small',when));
     const quote=el('div',undefined,'quote');quote.append(el('strong',`$${money(x.price)}`),el('div','元／公斤','unit'),el('span',state.label,`badge ${state.tone}`));
     card.append(emoji,copy,quote);card.addEventListener('click',()=>openDetail(x));$('cards').append(card);
   }
@@ -46,7 +49,10 @@ function openDetail(x){
   body.append(stats,el('h3','最近 30 日交易價 · 元／公斤','chart-heading'),chart(x),el('p','每個點代表有交易紀錄的日期；連線不代表中間日期有報價。','sub'));
   const tableDetails=el('details'),table=el('table'),head=el('thead'),headrow=el('tr');headrow.append(el('th','交易日期'),el('th','元／公斤'));head.append(headrow);table.append(head);const tbody=el('tbody');for(const p of [...x.series].reverse()){const row=el('tr');row.append(el('td',p.date),el('td',money(p.price)));tbody.append(row);}table.append(tbody);tableDetails.append(el('summary','查看每日數值'),table);body.append(tableDetails,el('p',`${dataset.scope}。每日市場回報組合可能不同，僅供行情參考，不代表任何攤商的實際售價。`,'sub'));
   $('detail').showModal();$('detail').scrollTop=0;
+  document.dispatchEvent(new CustomEvent('prices:open',{detail:x}));
 }
+function showDeals(items,title,empty){mode={items,title,empty};limit=24;render();}
+function showAll(){mode=null;limit=24;render();}
 async function load(){
   $('error').hidden=true;$('cards').setAttribute('aria-busy','true');$('cards').replaceChildren(el('p','正在讀取行情…'));$('more').hidden=true;
   try{
@@ -56,14 +62,17 @@ async function load(){
     $('dataScope').textContent=`${data.source} · 新臺幣／公斤`;
     $('generated').textContent=`${data.scope}。快照產生：${new Date(data.generatedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false})}（臺灣時間）`;
     render();
-  }catch(e){dataset=null;$('error').hidden=false;$('dataDate').textContent='尚無法取得行情';$('cards').replaceChildren();$('count').textContent='';}
+    document.dispatchEvent(new CustomEvent('prices:loaded',{detail:data}));
+  }catch(e){dataset=null;$('error').hidden=false;$('dataDate').textContent='尚無法取得行情';$('cards').replaceChildren();$('count').textContent='';document.dispatchEvent(new CustomEvent('prices:error'));}
   finally{$('cards').setAttribute('aria-busy','false');}
 }
-$('foodSearch').addEventListener('input',()=>{limit=24;render();});
-$('priceSort').addEventListener('change',()=>{limit=24;render();});
-$('clearSearch').addEventListener('click',()=>{$('foodSearch').value='';limit=24;render();$('foodSearch').focus();});
+$('foodSearch').addEventListener('input',()=>{mode=null;limit=24;render();});
+$('priceSort').addEventListener('change',()=>{mode=null;limit=24;render();});
+$('clearSearch').addEventListener('click',()=>{$('foodSearch').value='';mode=null;limit=24;render();$('foodSearch').focus();});
 document.querySelectorAll('[data-search]').forEach(b=>b.addEventListener('click',()=>{$('foodSearch').value=b.dataset.search;setCategory('全部');}));
-function setCategory(value){category=value;limit=24;document.querySelectorAll('.filters button').forEach(b=>{b.classList.toggle('selected',b.textContent===category);b.setAttribute('aria-pressed',String(b.textContent===category));});render();}
+function setCategory(value){category=value;mode=null;limit=24;document.querySelectorAll('.filters button').forEach(b=>{b.classList.toggle('selected',b.textContent===category);b.setAttribute('aria-pressed',String(b.textContent===category));});render();}
 document.querySelectorAll('.filters button').forEach(b=>b.addEventListener('click',()=>setCategory(b.textContent)));
 $('more').addEventListener('click',()=>{limit+=24;render();});$('retry').addEventListener('click',load);$('closeDetail').addEventListener('click',()=>$('detail').close());
+// For pages that wrap this list (the cat guide home): it listens for prices:loaded / prices:error / prices:open.
+window.PriceList={today,data:()=>dataset,showDeals,showAll,openDetail};
 load();
