@@ -14,7 +14,7 @@ const FOLK={
  housewife:['🧹','格紋圍裙 × 雞毛撢子','打掃完家裡，拿著花布提袋出門補貨。','#e3eee4'],
  griller:['🍢','深藍頭巾 × 烤肉夾','夜市烤肉攤老闆，白天先來挑最新鮮的肉。','#f3e0d2'],
  kid:['🎒','黃色小帽 × 小熊背包','放學跟家人一起來買菜，最喜歡水果攤。','#f6efcf'],
- taike:['🥤','金項鍊 × 藍白拖','穿著藍白拖來買飲料，順便幫媽媽買把蔥。','#e5e1dc'],
+ taike:['🥤','西瓜頭 × 彩色刺青','短腿圓肚、粗金項鍊配窄版刷破牛仔褲，穿夾腳拖來買飲料。','#e5e1dc'],
  cook:['🍳','碎花頭巾 × 鍋鏟','自助餐阿姨一早來批菜，今天的青菜要炒三大盤。','#e2efe6']
 };
 const styles=[...Object.keys(FK.cast).map(id=>{const [icon,subtitle,description,bg]=FOLK[id]||['🙂',FK.cast[id].role,'',"#efe6dc"];return {id,icon,name:FK.cast[id].name,subtitle,description,bg}}),...window.cityCatStyles];

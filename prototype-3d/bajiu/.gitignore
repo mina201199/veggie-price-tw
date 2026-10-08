@@ -1,0 +1,16 @@
+# Local iteration archives and temporary verification outputs
+*-v[123].glb
+*-v[123].blend
+build_bajiu-v*.py
+preview-v*.png
+side-v*.png
+*.blend1
+*.log
+__pycache__/
+model-data.js
+browser-preview.png
+gallery-preview.png
+market-preview.png
+shape-verification.json
+verify_shape.py
+.staged-check-path.txt

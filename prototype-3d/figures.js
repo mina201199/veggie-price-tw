@@ -79,6 +79,8 @@
     if (!figs[id]) {
       const f = FK.create(T, id, { castShadow: true });
       f.root.traverse(o => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; });
+      // Refresh the card after an embedded character has replaced its placeholder.
+      if (f.ready) f.ready.then(() => { thumbnail(id); if (next >= ids.length) releaseThumbs(); });
       const holder = new T.Group(), base = new T.Mesh(baseGeo, baseMat);
       base.receiveShadow = true; base.castShadow = true;
       holder.add(base);
