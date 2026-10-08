@@ -31,8 +31,11 @@
   try {
     renderer = new T.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   } catch (err) {
+    // No WebGL: hide the scene's controls and open the price list, which works without 3D.
     $('loading').hidden = true;
     $('glError').hidden = false;
+    for (const el of [document.querySelector('.dock'), document.querySelector('.tools'), $('cats')]) el.hidden = true;
+    Drawer.set('full');
     return;
   }
   let pixelRatio = Math.min(window.devicePixelRatio || 1, coarse ? 1.75 : 2);
@@ -733,6 +736,6 @@
     }
   }
   renderer.setAnimationLoop(() => frame(clock.getDelta()));
-  // Local inspection only: cats-demo.html?debug exposes the scene so frames can be stepped and captured from the console.
+  // Local inspection only: prices.html?debug exposes the scene so frames can be stepped and captured from the console.
   if (/[?&]debug\b/.test(location.search)) window.catDemo = { renderer, scene, camera, cam, me, stalls, board, boardCanvas, goToBoard, frame, switchCat, resize, get deals() { return deals; }, get cat() { return cat; } };
 })();

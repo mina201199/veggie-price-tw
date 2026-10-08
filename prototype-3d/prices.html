@@ -1,19 +1,279 @@
 <!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f8ef"><title>今日菜價 · 這菜貴不貴</title><link rel="stylesheet" href="prices.css"><script defer src="prices-core.js"></script><script defer src="prices-ui.js"></script></head>
-<body><main>
-<header><a class="brand" href="prices.html"><span>青</span> 這菜貴不貴<small>DAILY MARKET</small></a><span class="public">免登入查詢</span></header>
-<section class="hero"><div class="eyebrow">每日行情・安心做功課</div><h1>今天買菜，<br>心裡先有個底。</h1><p>看看行情，再決定今天煮什麼。</p><div class="produce" aria-hidden="true">🥬<span>🍅</span></div></section>
-<section class="data-info"><div><span class="dot"></span><strong id="dataDate">正在讀取行情…</strong></div><p id="dataScope">農業部批發行情 · 新臺幣／公斤</p><small id="generated"></small></section>
-<section class="search-area"><label for="foodSearch">你今天想買什麼？</label><div class="search-box"><span aria-hidden="true">⌕</span><input type="search" id="foodSearch" placeholder="搜尋高麗菜、番茄、芭樂…" autocomplete="off"><button id="clearSearch" aria-label="清除搜尋">✕</button></div><div class="popular">常查食材 <button data-search="高麗菜">高麗菜</button><button data-search="小黃瓜">小黃瓜</button><button data-search="番茄">番茄</button></div></section>
-<nav class="filters" aria-label="食材分類"><button class="selected" aria-pressed="true">全部</button><button aria-pressed="false">葉菜</button><button aria-pressed="false">辛香</button><button aria-pressed="false">瓜果豆</button><button aria-pressed="false">根莖</button><button aria-pressed="false">菇類</button><button aria-pressed="false">水果</button></nav>
-<div class="list-head"><h2>今日菜價</h2><span id="count" role="status" aria-live="polite"></span></div>
-<div class="sort-row"><label for="priceSort">快速排序</label><select id="priceSort" aria-describedby="sortHint"><option value="default">預設排序</option><option value="asc">最便宜 → 最貴</option><option value="desc">最貴 → 最便宜</option></select></div>
-<p id="sortHint" class="sort-hint">依每公斤批發價排序，超過 7 天的歷史報價置底。</p>
-<p class="list-hint">同一食材不同品種分開看；判斷相對往年同期。</p>
-<div id="error" role="alert" hidden><p>行情載入失敗，請確認連線後再試。不會使用示範數字代替。</p><button id="retry">重新載入</button></div><div id="cards" aria-busy="true"><p>正在整理食材行情…</p></div><button id="more" hidden>顯示更多食材</button>
-<aside class="notice"><b>批發價 ≠ 攤商售價</b><p>這裡是全臺回報市場的批發加權均價，不是特定店家報價。市場組成、品質與運輸成本都會影響價格，不能據此判定商家不合理。</p></aside>
-<details class="method"><summary>資料與「貴不貴」怎麼看？</summary><p>最新價是該品種最後一個有交易紀錄日期的均價，不是五日平滑價。比較同一作物代號及官方品名、同樣全臺彙整範圍與每公斤單位。</p><p>取該交易日往前五年、各年同日期前後 15 日的每日均價中位數。至少需要 20 個日紀錄、涵蓋 2 年；低於基準 12% 標為偏低，高於 12% 標為偏高，其餘接近常態。超過 7 天未有紀錄不給行情判斷。</p><p>各日有回報的市場組合可能不同，價格差異不全是漲跌。本機版本是資料快照，不會由瀏覽器即時抓取；「重新載入」只重新讀取目前快照。分析是規則計算，未使用 LLM 或預測價格。</p></details>
-<footer><a href="https://data.moa.gov.tw/" target="_blank" rel="noopener">資料來源：農業部農業資料開放平臺 ↗</a><p>先了解行情，買菜更有方向。</p></footer>
-</main><nav class="bottom-nav" aria-label="主要功能"><a class="active" aria-current="page" href="prices.html">▤<span>今日菜價</span></a><a href="notebook.html">▧<span>採買筆記</span></a><a href="index.html">⌂<span>城市探索</span></a></nav>
-<dialog id="detail" aria-labelledby="detailTitle"><div class="dialog-top"><span>食材行情詳情</span><button id="closeDetail" aria-label="關閉行情詳情">✕</button></div><div id="detailBody"></div></dialog>
-</body></html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>這菜貴不貴 · 今日菜價</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 首頁：貓咪帶路的 3D 場景在上（cat-guide.js），今日菜價抽屜在下（prices-ui.js、drawer.js），底部是三個主功能的導覽。
+   沒有 WebGL 時只收起 3D，菜價清單照常可用。顏色與字型支援深色模式。 */
+:root {
+  --bg: #F3F5F0; --surface: #FFFFFF; --surface-2: #E9EDE6;
+  --ink: #1B231E; --ink-2: #4B574F; --ink-3: #7A857D; --line: #D8DED4;
+  --accent: #2A4B9B; --accent-ink: #FFFFFF; --accent-soft: #E3E9F7;
+  --good: #1F7446; --good-bg: #E0F0E6; --ok: #4F6072; --ok-bg: #E6EBF0;
+  --warn: #A95F06; --warn-bg: #FAEBD2; --bad: #B8301F; --bad-bg: #FAE1DC; --muted: #6F7A72; --muted-bg: #ECEFEA;
+  --scene-sky: #EEF1E9; --scene-ground: #E1E7DA; --glass: rgba(255, 255, 255, .88); --shadow: rgba(27, 35, 30, .14);
+  --display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --nav-h: 58px; --peek: 92px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111613; --surface: #19201C; --surface-2: #222A25;
+    --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82; --line: #2D3731;
+    --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+    --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+    --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16; --muted: #9AA59D; --muted-bg: #242C27;
+    --scene-sky: #1B231F; --scene-ground: #26302A; --glass: rgba(25, 32, 28, .9); --shadow: rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #19201C; --surface-2: #222A25;
+  --ink: #E7ECE8; --ink-2: #AEB8B1; --ink-3: #7E8A82; --line: #2D3731;
+  --accent: #8AA6F2; --accent-ink: #0D1530; --accent-soft: #1E2945;
+  --good: #62C98F; --good-bg: #16301F; --ok: #A9B7C6; --ok-bg: #212A33;
+  --warn: #F0AA4C; --warn-bg: #36260F; --bad: #F27F6F; --bad-bg: #3B1B16; --muted: #9AA59D; --muted-bg: #242C27;
+  --scene-sky: #1B231F; --scene-ground: #26302A; --glass: rgba(25, 32, 28, .9); --shadow: rgba(0, 0, 0, .4);
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body);
+  display: flex; align-items: center; justify-content: center; gap: 48px;
+  padding: 16px; overflow: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  position: relative; flex: 0 0 auto; width: min(100%, 420px); height: min(100%, 880px);
+  border-radius: 28px; overflow: hidden; overflow: clip; background: var(--scene-sky);  /* clip: the off-screen drawer must not let focus or scrollIntoView scroll the app */
+  box-shadow: 0 0 0 1px var(--line), 0 24px 60px var(--shadow);
+  user-select: none; -webkit-user-select: none;
+}
+#stage, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ---- Floating scene UI ---- */
+.bar { position: absolute; top: 0; left: 0; right: 0; padding: 14px 14px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px; border-radius: 999px; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); backdrop-filter: blur(8px); }
+.brand .mark { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font: 18px/1 var(--display); }
+.brand b { display: block; font: 16px/1.2 var(--display); }
+.brand small { display: block; color: var(--ink-2); font-size: 11.5px; letter-spacing: .04em; }
+.tools { display: flex; gap: 6px; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-size: 15px; display: grid; place-items: center; }
+.round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.cats { position: absolute; top: 70px; left: 14px; display: flex; gap: 6px; }
+.cat-chip { display: flex; align-items: center; gap: 7px; padding: 5px 12px 5px 5px; border-radius: 999px; border: 1.5px solid transparent; background: var(--glass); box-shadow: 0 2px 8px var(--shadow); font-size: 13px; font-weight: 500; }
+.cat-chip i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .12); }
+.cat-chip[aria-checked="true"] { border-color: var(--accent); color: var(--accent); }
+
+.price-card { position: absolute; left: 14px; top: 112px; width: 196px; padding: 11px 13px 12px; border-radius: 16px; border: 0; text-align: left; background: var(--surface); box-shadow: 0 8px 26px var(--shadow); }
+.pc-where, .pc-meta, .pc-more { display: block; }
+.pc-where { color: var(--ink-3); font-size: 11.5px; letter-spacing: .04em; }
+.pc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pc-top b { font: 18px/1.2 var(--display); }
+.chip { padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.muted { color: var(--muted); background: var(--muted-bg); }
+.pc-price { margin-top: 4px; display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.pc-price span:first-child { font: 26px/1.1 var(--display); }
+.pc-price span:last-child { color: var(--ink-2); font-size: 12px; }
+.pc-meta { color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pc-more { margin-top: 4px; color: var(--accent); font-size: 12px; font-weight: 500; }
+
+.bubble { position: absolute; left: 0; top: 0; padding: 6px 13px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 18px var(--shadow); font: 16px/1.3 var(--display); white-space: nowrap; transform: translate(-50%, -100%); pointer-events: none; }
+
+.dock { position: absolute; left: 0; right: 0; bottom: calc(var(--nav-h) + var(--peek) + 6px); padding: 0 12px; display: grid; pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.dock-row { display: flex; align-items: flex-end; gap: 10px; }
+#joy { position: relative; flex: 0 0 auto; width: 92px; height: 92px; border-radius: 50%; background: var(--glass); box-shadow: 0 2px 12px var(--shadow); touch-action: none; }
+#joy::before { content: ""; position: absolute; inset: 14px; border-radius: 50%; border: 1.5px dashed var(--line); }
+#knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: var(--accent); box-shadow: 0 3px 8px var(--shadow); }
+.actions { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.act { padding: 8px 4px; border-radius: 14px; border: 0; background: var(--glass); box-shadow: 0 2px 10px var(--shadow); font-weight: 500; font-size: 13.5px; }
+.act[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.act.primary { grid-column: 1 / -1; background: var(--accent); color: var(--accent-ink); font: 15px/1.3 var(--display); padding: 11px 6px; }
+
+.marker-toast { position: absolute; left: 50%; bottom: calc(var(--nav-h) + var(--peek) + 120px); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 14px; background: var(--ink); color: var(--bg); font-size: 13px; text-align: center; opacity: 0; transition: opacity .25s; pointer-events: none; }
+.marker-toast.show { opacity: 1; }
+
+/* ---- Price drawer (prices-ui.js renders into it) ---- */
+.drawer {
+  position: absolute; left: 0; right: 0; top: 8%; bottom: var(--nav-h); z-index: 5;
+  display: flex; flex-direction: column; background: var(--surface); color: var(--ink);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -6px 26px var(--shadow);
+  transition: transform .32s cubic-bezier(.2, .8, .2, 1); user-select: text; -webkit-user-select: text;
+}
+.drawer.dragging { transition: none; }
+.drawer-handle { flex: 0 0 auto; display: grid; justify-items: center; gap: 2px; width: 100%; padding: 7px 0 6px; border: 0; background: none; touch-action: none; }
+.drawer-handle span { width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
+.drawer-handle b { font-size: 11.5px; font-weight: 500; color: var(--ink-3); letter-spacing: .06em; }
+.search-box { flex: 0 0 auto; margin: 0 14px 10px; display: flex; align-items: center; padding-left: 12px; border-radius: 14px; background: var(--surface-2); }
+.search-box > span { font-size: 24px; color: var(--ink-3); }
+.search-box input { flex: 1; min-width: 0; border: 0; background: none; padding: 12px 8px; font-size: 16px; outline-offset: -3px; }
+.search-box button { width: 44px; height: 44px; border: 0; background: none; color: var(--ink-3); }
+.drawer-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 14px 24px; }
+.drawer[data-state="peek"] .drawer-body { overflow: hidden; }
+.data-line { margin: 0 0 8px; font-size: 12px; color: var(--ink-2); }
+.data-line strong { color: var(--ink); }
+.data-line span { display: block; color: var(--ink-3); font-size: 11px; }
+.popular { display: flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
+.popular button { border: 0; border-radius: 8px; background: var(--surface-2); padding: 7px 10px; font-size: 12.5px; }
+.filters { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+.filters button { flex: 0 0 auto; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--ink-2); font-size: 13px; }
+.filters .selected { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.list-head h2 { margin: 0; font: 19px/1.3 var(--display); }
+.list-head span { font-size: 11.5px; color: var(--ink-3); }
+.sort-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 10px; font-size: 12px; color: var(--ink-3); }
+.sort-row select { min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; }
+#cards { display: grid; gap: 8px; }
+.card { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; width: 100%; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); text-align: left; }
+.food-icon { width: 44px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); font-size: 25px; }
+.card h3 { margin: 0 0 2px; font: 16px/1.3 var(--display); }
+.card small { display: block; font-size: 11px; color: var(--ink-3); line-height: 1.5; overflow-wrap: anywhere; }
+.quote { text-align: right; white-space: nowrap; }
+.quote strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.quote .unit { font-size: 10.5px; color: var(--ink-3); margin-bottom: 4px; }
+.badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.badge.low { color: var(--good); background: var(--good-bg); }
+.badge.normal { color: var(--ok); background: var(--ok-bg); }
+.badge.high { color: var(--warn); background: var(--warn-bg); }
+.badge.muted { color: var(--muted); background: var(--muted-bg); }
+.back-all { justify-self: start; border: 0; background: none; color: var(--accent); padding: 4px 0; font-weight: 500; }
+.empty { text-align: center; padding: 28px 8px; color: var(--ink-3); }
+#more, #retry { display: block; margin: 14px auto 0; padding: 10px 22px; border-radius: 12px; border: 1px solid var(--line); background: none; color: var(--accent); }
+#error { padding: 14px; border-radius: 14px; background: var(--bad-bg); color: var(--bad); font-size: 13px; }
+#error p { margin: 0; }
+.fine { margin: 18px 0 0; font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+
+.bottom-nav { position: absolute; left: 0; right: 0; bottom: 0; height: var(--nav-h); z-index: 6; display: flex; justify-content: space-around; align-items: center; background: var(--surface); border-top: 1px solid var(--line); }
+.bottom-nav a { display: grid; justify-items: center; min-width: 76px; color: var(--ink-3); text-decoration: none; font-size: 18px; line-height: 1.2; }
+.bottom-nav a span { font-size: 11px; }
+.bottom-nav .active { color: var(--accent); font-weight: 700; }
+
+#loading { position: absolute; inset: 0; z-index: 10; display: grid; place-content: center; text-align: center; gap: 4px; background: var(--scene-sky); }
+#loading b { font: 18px/1.3 var(--display); }
+#loading p, #glError p { margin: 0; color: var(--ink-2); }
+/* Without WebGL only the 3D part gives way: a note above the price list, which opens fully. */
+#glError { position: absolute; left: 14px; right: 14px; top: 14px; z-index: 6; display: grid; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); box-shadow: 0 2px 10px var(--shadow); font-size: 13px; }
+.method { margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+.method summary { padding: 6px 0; }
+.method p { margin: 6px 0 0; color: var(--ink-3); line-height: 1.7; }
+.fine a { color: var(--accent); }
+
+/* ---- Price detail dialog (prices-ui.js) ---- */
+dialog { width: calc(100% - 24px); max-width: 440px; max-height: 88dvh; padding: 20px; border: 0; border-radius: 22px; background: var(--surface); color: var(--ink); box-shadow: 0 20px 80px var(--shadow); }
+dialog::backdrop { background: rgba(20, 30, 24, .45); backdrop-filter: blur(3px); }
+.dialog-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ink-3); }
+.dialog-top button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--surface-2); }
+#detailTitle { margin: 6px 0 2px; font: 24px/1.3 var(--display); }
+.sub { margin: 4px 0; font-size: 12px; color: var(--ink-3); }
+.detail-price { margin: 14px 0 2px; font: 34px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.detail-price small { font: 13px var(--body); color: var(--ink-2); }
+.analysis { margin: 14px 0; padding: 14px; border-radius: 14px; background: var(--surface-2); font-size: 14px; line-height: 1.8; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stats > div { padding: 12px; border-radius: 12px; border: 1px solid var(--line); font-size: 11px; color: var(--ink-3); }
+.stats b { display: block; margin: 4px 0; font-size: 19px; color: var(--ink); }
+.chart-heading { margin: 20px 0 0; font-size: 14px; }
+.chart { width: 100%; height: auto; margin: 8px 0; border-radius: 12px; background: var(--surface-2); }
+.chart text { font-size: 11px; fill: var(--ink-3); }
+table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 12px; }
+td, th { padding: 7px; text-align: left; border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; padding: 8px 0; font-size: 13px; }
+
+.about { flex: 0 1 300px; min-width: 0; display: grid; gap: 12px; }
+.about h1 { margin: 0; font: 30px/1.2 var(--display); text-wrap: balance; }
+.about p { margin: 0; color: var(--ink-2); max-width: 34ch; }
+.about dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+.about dt { color: var(--ink-3); }
+.about dd { margin: 0; }
+.about .src { font-size: 12px; color: var(--ink-3); }
+@media (max-width: 820px) { .about { display: none; } }
+@media (max-width: 480px) { body { padding: 0; } #app { width: 100%; height: 100%; border-radius: 0; box-shadow: none; } }
+</style>
+</head>
+<body>
+<main id="app">
+  <div id="stage" aria-label="可旋轉的 3D 場景：貓咪、六籃蔬菜和公佈欄"></div>
+  <header class="bar">
+    <div class="brand"><span class="mark" aria-hidden="true">貴</span><div><b>這菜貴不貴</b><small>今日菜價・貓咪帶路</small></div></div>
+    <div class="tools">
+      <button id="spin" class="round" aria-pressed="false" aria-label="鏡頭自動繞一圈">⟳</button>
+      <button id="recenter" class="round" aria-label="鏡頭回到預設位置">⌖</button>
+    </div>
+  </header>
+  <div id="cats" class="cats" role="radiogroup" aria-label="選擇貓咪"></div>
+  <button id="card" class="price-card" type="button" hidden>
+    <span class="pc-where">貓咪旁邊這一籃</span>
+    <span class="pc-top"><b id="pcName"></b><span id="pcChip" class="chip"></span></span>
+    <span class="pc-price"><span id="pcPrice"></span><span>元/公斤</span></span>
+    <span id="pcMeta" class="pc-meta"></span>
+    <span class="pc-more">看 30 日走勢 ›</span>
+  </button>
+  <div id="bubble" class="bubble" hidden>喵～</div>
+  <div id="toast" class="marker-toast" role="status" aria-live="polite"></div>
+  <div class="dock">
+    <div class="dock-row">
+      <div id="joy" role="group" aria-label="移動搖桿"><div id="knob"></div></div>
+      <div class="actions">
+        <button id="sit" class="act" aria-pressed="false">坐下</button>
+        <button id="roll" class="act" aria-pressed="false">翻肚</button>
+        <button id="pet" class="act">摸摸頭</button>
+        <button id="cheap" class="act primary">帶我找今天最划算的菜</button>
+      </div>
+    </div>
+  </div>
+
+  <section id="drawer" class="drawer" data-state="peek" aria-label="今日菜價">
+    <button id="drawerHandle" class="drawer-handle" type="button" aria-expanded="false" aria-controls="drawerBody" aria-label="展開或收起今日菜價"><span></span><b>今日菜價</b></button>
+    <div class="search-box"><span aria-hidden="true">⌕</span><input type="search" id="foodSearch" placeholder="你今天想買什麼？高麗菜、番茄…" autocomplete="off" aria-label="搜尋食材"><button id="clearSearch" type="button" aria-label="清除搜尋">✕</button></div>
+    <div id="drawerBody" class="drawer-body">
+      <p class="data-line"><strong id="dataDate">正在讀取行情…</strong><span id="dataScope"></span></p>
+      <div class="popular">常查 <button type="button" data-search="高麗菜">高麗菜</button><button type="button" data-search="小黃瓜">小黃瓜</button><button type="button" data-search="番茄">番茄</button></div>
+      <nav class="filters" aria-label="食材分類"><button class="selected" aria-pressed="true">全部</button><button aria-pressed="false">葉菜</button><button aria-pressed="false">辛香</button><button aria-pressed="false">瓜果豆</button><button aria-pressed="false">根莖</button><button aria-pressed="false">菇類</button><button aria-pressed="false">水果</button></nav>
+      <div class="list-head"><h2 id="listTitle">今日菜價</h2><span id="count" role="status" aria-live="polite"></span></div>
+      <div class="sort-row"><label for="priceSort">排序</label><select id="priceSort"><option value="default">預設排序</option><option value="asc">最便宜 → 最貴</option><option value="desc">最貴 → 最便宜</option></select></div>
+      <div id="error" role="alert" hidden><p>行情載入失敗，請確認連線後再試。不會使用示範數字代替。</p><button id="retry" type="button">重新載入</button></div>
+      <div id="cards" aria-busy="true"><p>正在整理食材行情…</p></div>
+      <button id="more" type="button" hidden>顯示更多食材</button>
+      <p class="fine"><small id="generated"></small><br>批發價 ≠ 攤商售價：這是全臺回報市場的批發加權均價，不是特定店家報價，不能據此判定商家不合理。<br><a href="https://data.moa.gov.tw/" target="_blank" rel="noopener">資料來源：農業部農業資料開放平臺 ↗</a></p>
+      <details class="method"><summary>資料與「貴不貴」怎麼看？</summary><p>最新價是該品種最後一個有交易紀錄日期的均價，不是五日平滑價。比較同一作物代號及官方品名、同樣全臺彙整範圍與每公斤單位。</p><p>取該交易日往前五年、各年同日期前後 15 日的每日均價中位數。至少需要 20 個日紀錄、涵蓋 2 年；低於基準 12% 標為偏低，高於 12% 標為偏高，其餘接近常態。超過 7 天未有紀錄不給行情判斷。</p><p>公佈欄的「最划算」：最新交易日、國產、當天成交量至少 3,000 公斤、比往年同期便宜，同一種菜只留最便宜的品種，取前 10 名。本機版本是資料快照，「重新載入」只重新讀取目前快照。分析是規則計算，未使用 LLM 或預測價格。</p></details>
+    </div>
+  </section>
+  <nav class="bottom-nav" aria-label="主要功能"><a class="active" aria-current="page" href="prices.html">▤<span>今日菜價</span></a><a href="notebook.html">▧<span>採買筆記</span></a><a href="index.html">⌂<span>城市探索</span></a></nav>
+
+  <div id="loading"><b>貓咪正在梳毛…</b><p>載入 3D 場景</p></div>
+  <div id="glError" hidden role="alert"><b>貓咪先休息一下</b><p>這個瀏覽器無法顯示 3D 場景（需要 WebGL）。下方的今日菜價照常可以查。</p></div>
+</main>
+<aside class="about">
+  <h1>歐巴、波妞和小橘帶你看今天的菜價</h1>
+  <p>按「帶我找今天最划算的菜」，貓咪會走到公佈欄前，告訴你今天比往年同期便宜最多的菜；下方抽屜可以查任何一種菜。</p>
+  <dl>
+    <dt>公佈欄</dt><dd>今天有交易、國產、成交量 3,000 公斤以上，比往年同期便宜最多的前 10 種</dd>
+    <dt>菜籃</dt><dd>六種常見菜今天成交量最大的品種；走近或點價格卡看走勢</dd>
+    <dt>走動</dt><dd>搖桿、WASD／方向鍵，或直接點地面</dd>
+  </dl>
+  <p class="src">價格來自 prices-data.json（農業部批發行情快照），與今日菜價清單同一份資料、同一套判斷。</p>
+</aside>
+<dialog id="detail" aria-labelledby="detailTitle"><div class="dialog-top"><span>食材行情詳情</span><button id="closeDetail" type="button" aria-label="關閉行情詳情">✕</button></div><div id="detailBody"></div></dialog>
+<script src="vendor/three.min.js"></script>
+<script src="cat-kit.js"></script>
+<script src="prices-core.js"></script>
+<script src="prices-ui.js"></script>
+<script src="drawer.js"></script>
+<script src="cat-guide.js"></script>
+</body>
+</html>

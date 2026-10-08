@@ -1,4 +1,4 @@
-/* 歐巴, 波妞 and 小橘 for the wardrobe: thin adapters over CatKit (cat-kit.js), the fur-shaded kittens from cats-demo.html. */
+/* 歐巴, 波妞 and 小橘 for the wardrobe: thin adapters over CatKit (cat-kit.js), the fur-shaded kittens from the home page's cat guide. */
 window.cityCatStyles=[
  {id:'blackcat',cat:true,icon:'🐾',name:'歐巴',subtitle:'金色大眼 × 捲捲尾巴',description:'圓滾滾的黑色毛球，金色大眼睛配四隻小短腿，陪你慢慢探訪市場。',bg:'#e4d9cf'},
  {id:'mochi',cat:true,icon:'🐈',name:'波妞',subtitle:'銀灰虎斑 × 蓬鬆白胸毛',description:'波妞有綠眼睛、粉鼻子和蓬蓬大尾巴，是慢慢逛街的銀白小夥伴。',bg:'#dfe7df'},

@@ -10,6 +10,8 @@ class LauncherTests(unittest.TestCase):
    for page in ['prices.html','notebook.html','index.html']:
     with urllib.request.urlopen(f'http://127.0.0.1:{port}/{page}') as response:self.assertEqual(response.status,200)
    with self.assertRaises(urllib.error.HTTPError):urllib.request.urlopen(f'http://127.0.0.1:{port}/../.git/config')
+   # The cat guide moved into the home page; the old address forwards there.
+   with urllib.request.urlopen(f'http://127.0.0.1:{port}/cats-demo.html') as response:self.assertIn(b"location.replace('prices.html'",response.read())
    with self.assertRaises(OSError):app.make_server(port)
   finally:server.shutdown();server.server_close();thread.join()
 if __name__=='__main__':unittest.main()
