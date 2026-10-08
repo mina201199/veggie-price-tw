@@ -5,7 +5,7 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'nu
 const money=n=>Number.isFinite(n)?n.toFixed(1):'—';
 const delta=(a,b)=>`${a>=b?'高':'低'} ${Math.abs((a/b-1)*100).toFixed(0)}%`;
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-function icon(x){if(/甘藍|包心|白菜|萵苣/.test(x.official))return '🥬';if(/番茄/.test(x.official))return '🍅';if(/胡蘿蔔/.test(x.official))return '🥕';if(/香蕉/.test(x.official))return '🍌';if(/茄子/.test(x.official))return '🍆';if(/玉米/.test(x.official))return '🌽';return {'葉菜':'🥬','瓜果豆':'🥒','根莖':'🥔','菇類':'🍄','水果':'🍊'}[x.category]||'🌱';}
+function icon(x){if(/甘藍|包心|白菜|萵苣/.test(x.official))return '🥬';if(/番茄/.test(x.official))return '🍅';if(/胡蘿蔔/.test(x.official))return '🥕';if(/香蕉/.test(x.official))return '🍌';if(/茄子/.test(x.official))return '🍆';if(/玉米/.test(x.official))return '🌽';return {'葉菜':'🥬','辛香':'🧄','瓜果豆':'🥒','根莖':'🥔','菇類':'🍄','水果':'🍊'}[x.category]||'🌱';}
 function render(){
   if(!dataset)return;
   const results=Prices.sortPrices(Prices.search(dataset.items,$('foodSearch').value,category),$('priceSort').value,today());

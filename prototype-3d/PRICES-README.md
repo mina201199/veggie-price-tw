@@ -3,14 +3,23 @@
 入口：`prices.html`。不需要登入或進入 3D 城市，不修改角色模型。
 
 使用既有 `data/raw/*.json` 中農業部資料，每個「種類／作物代號／完整官方品名」獨立呈現。
+常用名、分類（含辛香）、不收的品項（醃漬加工品、「其他」類）與往年同期規則，跟公開網站共用 `tools/catalog.py`；
+快照由 `tools/build_prices.py` 產生，瀏覽器端（`prices-core.js`）只負責判斷標籤、搜尋與排序。
 此來源已彙整全臺市場，無法提供個別市場比較，也無法保證每天參與市場集合完全相同。
 
 ## 更新
 
-在專案根目錄先執行既有 `python tools/fetch.py`，成功後執行：
+更新資料只需要 Python，在專案根目錄執行：
 
 ```
-node prototype-3d/build-prices.cjs
+python tools/fetch.py
+python tools/build_prices.py
+```
+
+改了程式之後的測試：
+
+```
+python -m unittest discover -s tools
 node prototype-3d/prices.test.cjs
 ```
 
@@ -21,7 +30,7 @@ node prototype-3d/prices.test.cjs
 ## 分析限制
 
 顯示最後交易日的全臺交易量加權均價，不使用平滑價格冒充當日價格。
-以該交易日往前五年各年同日期 ±15 天的每日均價中位數比較；至少 20 個日紀錄、2 年才給結論。
+以該交易日往前五年各年同日期 ±15 天的每日均價中位數比較；至少 20 個日紀錄、2 年才給結論（公開網站同一規則）。
 正負 12% 內為接近常態，外側為偏高／偏低。超過 7 天未更新不給當前判斷。
 近期比較為最後交易日前七日的交易量加權均價，不含最後交易日。
 曲線只繪出已觀測日期；空缺不補零、不推估。

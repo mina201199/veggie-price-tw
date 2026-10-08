@@ -50,6 +50,7 @@ python tools/fetch.py          # 抓最近 10 天批發行情，合併進 data/r
 python tools/fetch_retail.py   # 抓臺北市零售行情
 python tools/build.py          # 算指標 → site/data.json
 python tools/inject.py         # 產生網頁 → site/index.html
+python -m unittest discover -s tools   # 測試
 ```
 
 ## 檔案
@@ -60,6 +61,7 @@ python tools/inject.py         # 產生網頁 → site/index.html
 | `data/retail_taipei.json` | 臺北市公有市場月均零售價 |
 | `tools/fetch.py` | 抓農業部 API（處理單次 9999 筆上限、憑證相容問題） |
 | `tools/build.py` | 行情資料整理 |
+| `tools/catalog.py` | 官方品名對常用名與分類、往年同期基準（各頁面共用） |
 | `tools/markup.py` | 行情參考資訊處理 |
 | `tools/template.html` | 網頁介面 |
 | `.github/workflows/update.yml` | 每日自動更新與發布 |
