@@ -4,7 +4,7 @@ const ctx = { window: {}, Math };
 vm.createContext(ctx);
 for (const f of ['cat-kit.js', 'cats.js']) vm.runInContext(fs.readFileSync(__dirname + '/' + f, 'utf8'), ctx);
 assert.equal(typeof ctx.window.createCityCat, 'function');
-assert.equal(ctx.window.cityCatStyles.map(s => s.name).join(), '歐巴,波妞');
+assert.equal(ctx.window.cityCatStyles.map(s => s.name).join(), '歐巴,波妞,小橘');
 for (const s of ctx.window.cityCatStyles) {
   const c = ctx.window.createCityCat(T, s);
   // The wardrobe moves root.children into the avatar, so the CatKit rig must be the single child.

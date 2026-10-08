@@ -1,4 +1,4 @@
-/* 換角色: the twelve market folk (FigureKit, figure-cast.js) and the two cats 歐巴、波妞 (CatKit, cats.js).
+/* 換角色: the twelve market folk (FigureKit, figure-cast.js) and the three cats 歐巴、波妞、小橘 (CatKit, cats.js).
    Code-built models only; the choice is remembered on this device. */
 window.createCuteWardrobe=function(T,{host,body,onOpen,onClose}){
 const FK=window.FigureKit;

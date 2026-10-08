@@ -1,4 +1,4 @@
-/* CatKit: 烏咪 and Mochi as original, code-built chibi kittens.
+/* CatKit: 歐巴 (black), 波妞 (silver tabby) and 小橘 (ginger tabby) as original, code-built chibi kittens.
    Each furry part is a single InstancedMesh. Instance i is fur shell i: the vertex
    shader pushes it out along the normal, and the fragment shader carves strands
    from 3D cell noise. No external models or image textures.
@@ -31,12 +31,13 @@
 
   const STYLES = {
     blackcat: {
-      id: 'blackcat', name: '烏咪', fullName: '黑貓・烏咪', tagline: '金色大眼・捲捲尾巴', swatch: '#2a2529',
+      id: 'blackcat', name: '歐巴', fullName: '黑貓・歐巴', tagline: '金色大眼・捲捲尾巴', swatch: '#2a2529',
       plump: 1, furScale: 1, density: 92, taper: .85, ao: .3, tip: '#3b3237', sheen: '#a49aa8',
       palette: { base: '#231e22', warm: '#3b302d' },
       earInner: '#b38087', iris: ['#fff1a8', '#f3c64e', '#d99a26', '#7a4c0e'], socket: '#110d0f',
       nose: '#2e2528', mouth: '#0c0a0b', pad: '#80595f', whisker: '#e9e3e6',
       tail: { r: .085, len: .15, segs: 9, fur: .095, plume: .15 },
+      brows: { color: '#3E3739', fur: .014, density: 45 },  // short, sparse brows a shade lighter than the coat
       color(p, n, region, pal) {
         const c = pal.base.clone().multiplyScalar(.8 + .45 * noise(p.x * 9, p.y * 9, p.z * 9));
         if (region === 'chest' || region === 'cheek') c.lerp(pal.warm, .25);
@@ -44,14 +45,17 @@
       }
     },
     mochi: {
-      id: 'mochi', name: 'Mochi', fullName: 'Mochi・麻糬', tagline: '銀灰虎斑・蓬蓬大尾巴', swatch: '#b4b1b8',
-      plump: 1.1, furScale: 1.65, density: 100, taper: .8, ao: .66, tip: '#161616', sheen: '#ffffff',
-      palette: { white: '#fbf9f6', grey: '#b1aeb4', dark: '#6f6c76' },
-      earInner: '#eeb5b8', iris: ['#e6f2b4', '#b7cf78', '#86a64a', '#3f5520'], socket: '#4a4447',
-      nose: '#ec9fa7', mouth: '#a47a7e', pad: '#f2a9b1', whisker: '#ffffff',
+      id: 'mochi', name: '波妞', fullName: '灰白貓・波妞', tagline: '銀灰虎斑・蓬蓬大尾巴', swatch: '#b8b3b0',
+      // Fur colours from the user's table (2026-10-08); the white is pure white with light fur-root shading (ao)
+      // and a 12% lift so it still reads as paper white after tone mapping. The pink tummy only shows belly-up.
+      plump: 1.1, furScale: 1.65, density: 100, taper: .8, ao: .93, whiteGain: 1.12, tip: '#161616', sheen: '#ffffff',
+      palette: { white: '#FFFFFF', shade: '#F7F6F4', grey: '#B8B3B0', light: '#D5D1CD', dark: '#686361', belly: '#EFA3A0' },
+      earInner: '#EBC0BB', iris: ['#e6f2b4', '#b7cf78', '#86a64a', '#3f5520'], socket: '#4a4447',
+      nose: '#EFA3A0', mouth: '#a47a7e', pad: '#DFA4A3', whisker: '#F6F2EA',
+      eye: { pupil: [.082, .086], forward: .85 },  // round pupils, turned a little more toward the front
       tail: { r: .13, len: .15, segs: 8, fur: .16, plume: .45 },
       ruff: true, earTufts: true,
-      // Silver tabby on white, after the Mochi reference sheet: grey cap with dark forehead stripes,
+      // Silver tabby on white, after the 波妞 reference sheet: grey cap with dark forehead stripes,
       // grey temples, nape, back, haunches and tail; white blaze, muzzle, bib, legs and paws.
       color(p, n, region, pal) {
         const k = noise(p.x * 6, p.y * 6, p.z * 6), ax = Math.abs(p.x);
@@ -80,8 +84,58 @@
           t = .78 + .15 * k;
           s = smooth(.55, .92, Math.sin(p.y * 13 + k * 2));
         }
-        const g = pal.grey.clone().lerp(pal.dark, Math.min(1, s));
-        return pal.white.clone().lerp(g, Math.min(1, Math.max(0, t + (k - .5) * .2)));
+        // Optional palette.light (highlights in the grey) and palette.shade (shadowed white, underneath and in the noise).
+        const g = pal.grey.clone();
+        if (pal.light) g.lerp(pal.light, smooth(.45, .8, k) * .6);
+        g.lerp(pal.dark, Math.min(1, s));
+        const w = pal.white.clone();
+        if (pal.shade) w.lerp(pal.shade, Math.max(smooth(.1, -.6, n.y), smooth(.6, .2, k) * .5));
+        if (this.whiteGain) w.multiplyScalar(this.whiteGain);  // a touch past 1, so the white survives tone mapping
+        // Optional palette.belly: pink under the tummy, only on fur facing the floor, so it shows when she rolls over.
+        if (pal.belly && region === 'body') w.lerp(pal.belly, smooth(-.12, -.5, n.y) * (1 - smooth(.2, .34, ax)) * smooth(-.58, -.4, p.z) * (1 - smooth(.3, .46, p.z)));
+        return w.lerp(g, Math.min(1, Math.max(0, t + (k - .5) * .2)));
+      }
+    },
+    ginger: {
+      id: 'ginger', name: '小橘', fullName: '橘貓・小橘', tagline: '橘色虎斑・奶油色白襪', swatch: '#eba04c',
+      plump: 1.08, furScale: 1.3, density: 96, taper: .82, ao: .7, tip: '#2a1606', sheen: '#ffe1b5',
+      palette: { cream: '#ffedcc', orange: '#f0a24a', dark: '#c25a17' },
+      earInner: '#f2aca6', iris: ['#f1f2b6', '#cdd46e', '#9aa83c', '#515c1c'], socket: '#3c2615',
+      nose: '#ef9d98', mouth: '#b07a6c', pad: '#f0aaa6', whisker: '#ffffff',
+      tail: { r: .11, len: .15, segs: 9, fur: .12, plume: .3 },
+      // Ginger tabby after the 小橘 reference sheet: orange with darker stripes (an M on the forehead, lines from the
+      // eye corners, vertical bands on the flanks, rings on legs and tail); cream muzzle, chin, bib, belly, socks
+      // and tail tip. cream = how much of a spot is cream rather than orange.
+      color(p, n, region, pal) {
+        const k = noise(p.x * 6, p.y * 6, p.z * 6), ax = Math.abs(p.x);
+        let cream = 0, s = 0;
+        if (region === 'head') {
+          cream = smooth(1.2, 1.06, p.y) * (1 - smooth(.26, .42, ax)) * smooth(.1, .5, n.z);  // lower face
+          s = Math.max(
+            smooth(.5, .85, Math.sin(ax * 30 + .6)) * smooth(1.44, 1.54, p.y) * (1 - smooth(.3, .4, ax)),               // M on the forehead
+            smooth(.55, .9, Math.sin(p.y * 34 + 1)) * smooth(.3, .42, ax) * smooth(1.14, 1.22, p.y) * (1 - smooth(1.42, 1.5, p.y)),  // from the eye corners
+            smooth(.55, .9, Math.sin(ax * 16 + p.z * 10)) * smooth(.3, .1, p.z));  // over the back of the head
+        } else if (region === 'cheek') {
+          cream = smooth(1.2, 1.08, p.y);
+          s = smooth(.55, .9, Math.sin(p.y * 34 + 1)) * (1 - cream);
+        } else if (region === 'muzzle' || region === 'chin' || region === 'paw') cream = 1;
+        else if (region === 'chest') cream = 1 - smooth(.17, .29, ax) * smooth(.55, .8, p.y);
+        else if (region === 'body') {
+          cream = smooth(.5, .36, p.y) + smooth(.3, .5, p.z) * smooth(.66, .5, p.y);  // belly, and the bib running under the chest
+          s = smooth(.5, .88, Math.sin(p.z * 14 + ax * 5 + k * 2.5));
+        } else if (region === 'thigh') {
+          cream = smooth(.3, .18, p.y);
+          s = smooth(.55, .9, Math.sin(p.y * 18 + p.z * 6 + k * 2));
+        } else if (region === 'frontLeg' || region === 'backLeg') {
+          cream = smooth(.24, .14, p.y) + smooth(.06, .02, ax) * .5;  // white socks, paler inside
+          s = smooth(.6, .92, Math.sin(p.y * 30 + k * 2));
+        } else if (region === 'tail') {
+          cream = smooth(1.86, 2.02, p.y);  // the tail is baked pointing straight up: its last segments are the tip
+          s = smooth(.55, .92, Math.sin(p.y * 13 + k * 2));
+        }
+        cream = Math.min(1, Math.max(0, cream + (k - .5) * .15));
+        const fur = pal.orange.clone().lerp(pal.dark, Math.min(1, s)).multiplyScalar(.94 + .12 * k);
+        return fur.lerp(pal.cream, cream);
       }
     }
   };
@@ -172,8 +226,11 @@ bool furStrand(vec3 q) {
 
   function create(T, styleId, opts) {
     opts = opts || {};
-    const S = STYLES[styleId] || STYLES.blackcat;
+    // opts.style overrides parts of the style for this one cat (e.g. previewing new colours).
+    const S = Object.assign({}, STYLES[styleId] || STYLES.blackcat, opts.style);
     const shells = opts.shells || 18, P = S.plump, F = S.furScale;
+    // style.eye: forward turns the eyes toward the front (rounder from the front), pupil is [width, height].
+    const EYE = Object.assign({ forward: .45, pupil: [.07, .09] }, S.eye);
     const pal = {};
     for (const k in S.palette) pal[k] = new T.Color(S.palette[k]);
 
@@ -210,8 +267,9 @@ bool furStrand(vec3 q) {
     }
     function fur(geo, parent, pos, o) {
       const len = o.abs ? o.len : o.len * F, comb = o.comb || [0, -.35, -.55];
-      const key = len.toFixed(4) + '|' + comb.join();
-      if (!furMats.has(key)) furMats.set(key, makeFurMaterial(T, S, shells, len, new T.Vector3(comb[0], comb[1], comb[2])));
+      const key = len.toFixed(4) + '|' + comb.join() + '|' + (o.ao || '') + '|' + (o.density || '');
+      const MS = o.ao || o.density ? Object.assign({}, S, o.ao && { ao: o.ao }, o.density && { density: o.density }) : S;
+      if (!furMats.has(key)) furMats.set(key, makeFurMaterial(T, MS, shells, len, new T.Vector3(comb[0], comb[1], comb[2])));
       const count = geo.attributes.position.count;
       geo.setAttribute('furMask', new T.BufferAttribute(new Float32Array(count).fill(1), 1));
       geo.setAttribute('color', new T.BufferAttribute(new Float32Array(count * 3).fill(1), 3));
@@ -250,9 +308,21 @@ bool furStrand(vec3 q) {
     const eyeSpots = [-1, 1].map(s => onHead(s * .185, .43).p);
     const noseSpot = new T.Vector3(0, .3, .565), mouthSpot = new T.Vector3(0, .235, .59);
     const nearEye = p => Math.min(p.distanceTo(eyeSpots[0]), p.distanceTo(eyeSpots[1]));
+    // style.brows: { color, fur, density }: a pale tuft of short fur above each eye (歐巴's white eyebrows).
+    const browSpots = S.brows ? [-1, 1].map(s => onHead(s * .21, .61)) : [];
+    const nearBrow = p => Math.min(1, ...browSpots.map(b => smooth(.06, .15, p.distanceTo(b.p))));
     fur(ellipsoid(headR.x, headR.y, headR.z, true), neck, headC, {
       len: .05, comb: [0, -.25, -.5], region: 'head',
-      mask: p => Math.min(smooth(.14, .24, nearEye(p)), .25 + .75 * smooth(.05, .16, p.distanceTo(noseSpot)))
+      mask: p => Math.min(smooth(.14, .24, nearEye(p)), .25 + .75 * smooth(.05, .16, p.distanceTo(noseSpot)), browSpots.length ? .35 + .65 * nearBrow(p) : 1)
+    });
+    const browColor = S.brows ? new T.Color(S.brows.color) : null;
+    browSpots.forEach((b, i) => {
+      const s = i ? 1 : -1, g = new T.Group();
+      g.position.copy(b.p);
+      g.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), b.n);
+      g.rotateZ(s * .3);  // outer end tips up
+      neck.add(g);
+      fur(ellipsoid(.12, .04, .022), g, new T.Vector3(0, 0, .008), { abs: true, len: S.brows.fur, comb: [s * .5, .4, .4], region: 'brow', ao: .8, density: S.brows.density || 70 });
     });
     for (const s of [-1, 1]) {
       fur(ellipsoid(.23 * P, .19, .2), neck, new T.Vector3(s * .27 * P, .23, .28), {
@@ -271,11 +341,11 @@ bool furStrand(vec3 q) {
 
     // Eyes: dark rim, ringed iris, big pupil and two glints, oriented along the head surface.
     const irisMat = new T.MeshPhysicalMaterial({ map: makeIrisTexture(T, S.iris), color: '#ffffff', roughness: .2, clearcoat: 1, clearcoatRoughness: .04 });
-    const pupilMat = new T.MeshPhysicalMaterial({ color: '#07080b', roughness: .15, clearcoat: 1 });
+    const pupilMat = new T.MeshPhysicalMaterial({ color: S.pupil || '#07080b', roughness: .15, clearcoat: 1 });
     const glintMat = new T.MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
     const eyes = [];
     for (const s of [-1, 1]) {
-      const spot = onHead(s * .185, .43), dir = spot.n.clone().add(new T.Vector3(0, 0, .45)).normalize();
+      const spot = onHead(s * .185, .43), dir = spot.n.clone().add(new T.Vector3(0, 0, EYE.forward)).normalize();
       const g = new T.Group();
       g.position.copy(spot.p).addScaledVector(dir, -.042);
       g.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), dir);
@@ -287,7 +357,7 @@ bool furStrand(vec3 q) {
       irisGeo.scale(.13, .135, .045);
       add(irisGeo, irisMat, g, 0, 0, .012);
       // Pupils sit slightly toward the nose so the outward-facing eyes still look ahead.
-      add(ellipsoid(.07, .09, .03), pupilMat, g, -s * .014, -.004, .035);
+      add(ellipsoid(EYE.pupil[0], EYE.pupil[1], .03), pupilMat, g, -s * .014, -.004, .035);
       add(ellipsoid(.034, .038, .012), glintMat, g, -.035 - s * .01, .045, .052);
       add(ellipsoid(.015, .015, .008), glintMat, g, .04 - s * .01, -.045, .05);
     }
@@ -387,7 +457,7 @@ bool furStrand(vec3 q) {
         nl.fromBufferAttribute(nor, i);
         w.copy(v).applyMatrix4(part.mesh.matrixWorld);
         n.copy(nl).applyMatrix3(nm).normalize();
-        const c = S.color(w, n, part.region, pal);
+        const c = part.region === 'brow' ? browColor.clone().multiplyScalar(.9 + .2 * noise(w.x * 30, w.y * 30, w.z * 30)) : S.color(w, n, part.region, pal);
         col.setXYZ(i, c.r, c.g, c.b);
         if (part.mask) fm.setX(i, part.mask(local.copy(v).add(part.mesh.position), nl));
       }
