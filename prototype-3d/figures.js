@@ -1,4 +1,4 @@
-/* Market Folk gallery: one figurine at a time on a white display base (a turntable you can drag), or all twelve in a
+/* Market Folk gallery: one figurine at a time on a white display base (a turntable you can drag), or all eight in a
    two-row lineup. Figures are built one by one after the first appears; each gets a thumbnail for its card. */
 (function () {
   'use strict';
@@ -77,9 +77,9 @@
   const figs = {};
   function get(id) {
     if (!figs[id]) {
-      const f = FK.create(T, id, { castShadow: true });
+      const GLB = window.FigureGLB, f = (GLB && GLB.has(id) ? GLB : FK).create(T, id, { castShadow: true });
       f.root.traverse(o => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; });
-      // Refresh the card after an embedded character has replaced its placeholder.
+      // A Blender model swaps in once its GLB has loaded: retake the card picture then.
       if (f.ready) f.ready.then(() => { thumbnail(id); if (next >= ids.length) releaseThumbs(); });
       const holder = new T.Group(), base = new T.Mesh(baseGeo, baseMat);
       base.receiveShadow = true; base.castShadow = true;
@@ -160,7 +160,8 @@
     grid.querySelectorAll('.card').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
     if (!grid.querySelector(`[data-id="${id}"] img`)) thumbnail(id);
   }
-  const LINEUP = ids.map((id, i) => { const row = i < 6 ? 0 : 1, c = i % 6; return [(c - 2.5) * 1.62 + (row ? .81 : 0), row ? -1.9 : 0, row ? .62 : 0]; });
+  const columns = Math.ceil(ids.length / 2);
+  const LINEUP = ids.map((id, i) => { const row = i < columns ? 0 : 1, c = i % columns; return [(c - (columns - 1) / 2) * 1.62 + (row ? .81 : 0), row ? -1.9 : 0, row ? .62 : 0]; });
   const riser = new T.Mesh(new T.BoxGeometry(11.2, .62, 1.9), baseMat);
   riser.position.set(.4, .31, -1.9);
   riser.receiveShadow = true; riser.castShadow = true;

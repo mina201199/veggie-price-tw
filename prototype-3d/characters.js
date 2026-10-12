@@ -1,28 +1,25 @@
-/* 換角色: the twelve market folk (FigureKit, figure-cast.js) and the three cats 歐巴、波妞、小橘 (CatKit, cats.js).
-   Code-built models only; the choice is remembered on this device. */
+/* 換角色: the eight approved market folk (FigureKit, figure-cast.js; the ones modelled in Blender come from FigureGLB, figure-glb.js)
+   and the three cats 歐巴、波妞、小橘 (CatKit, cats.js). The choice is remembered on this device. */
 window.createCuteWardrobe=function(T,{host,body,onOpen,onClose}){
-const FK=window.FigureKit;
+const FK=window.FigureKit,GLB=window.FigureGLB;
+const figure=(id,opts)=>(GLB&&GLB.has(id)?GLB:FK).create(T,id,opts);
 // Wardrobe card copy for each figure: icon, subtitle, a line about them, and the preview backdrop.
 const FOLK={
  grandma:['🛒','紫色漁夫帽 × 格紋菜籃車','推著菜籃車慢慢逛，每一攤的價錢她都記得清清楚楚。','#ece0f0'],
  chief:['📣','紅背心 × 麥克風','拿著麥克風巡里，哪一攤今天特價，他最先知道。','#f3dcd8'],
- mechanic:['🔧','連身工作服 × 活動扳手','機車行修到一半，趁空檔來市場買便當配菜。','#dbe3ea'],
  grandpa:['🦯','米色襯衫 × 木頭拐杖','拄著拐杖散步到市場，一邊挑菜一邊跟老闆聊天。','#ebe3d6'],
- courier:['🛵','青綠安全帽 × 外送保溫箱','送完一單，順手查一下今天的菜價。','#f5ead0'],
- auntie:['🧺','捲捲燙髮 × 透明遮陽帽','提著綠色菜籃，最會比價也最會殺價。','#f6dfd6'],
+ auntie:['🧺','米白安全帽 × 紅白買菜袋','歪頭盯著價格，花手套一戴，準備跟老闆殺價。','#f6dfd6'],
  uncle:['🍵','白色汗衫 × 保溫水壺','穿著藍白拖晃到市場，水壺裡裝著熱茶。','#dfe4ef'],
  housewife:['🧹','格紋圍裙 × 雞毛撢子','打掃完家裡，拿著花布提袋出門補貨。','#e3eee4'],
- griller:['🍢','深藍頭巾 × 烤肉夾','夜市烤肉攤老闆，白天先來挑最新鮮的肉。','#f3e0d2'],
  kid:['🎒','黃色小帽 × 小熊背包','放學跟家人一起來買菜，最喜歡水果攤。','#f6efcf'],
  taike:['🥤','西瓜頭 × 彩色刺青','短腿圓肚、粗金項鍊配窄版刷破牛仔褲，穿夾腳拖來買飲料。','#e5e1dc'],
- cook:['🍳','碎花頭巾 × 鍋鏟','自助餐阿姨一早來批菜，今天的青菜要炒三大盤。','#e2efe6']
 };
 const styles=[...Object.keys(FK.cast).map(id=>{const [icon,subtitle,description,bg]=FOLK[id]||['🙂',FK.cast[id].role,'',"#efe6dc"];return {id,icon,name:FK.cast[id].name,subtitle,description,bg}}),...window.cityCatStyles];
 const DEFAULT='grandma',cache=new Map(),previewKits=new Map();
 let selected=null,open=false,previewFrame=0,previewGroup,previewRenderer,previewScene,previewCamera,previewKit=null,previewLast=0,angle=.22,walking=false;
 function build(s){
  if(s.cat){const c=window.createCityCat(T,s);c.cat=true;return c}
- const fig=FK.create(T,s.id,{castShadow:true});fig.root.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ const fig=figure(s.id,{castShadow:true});fig.root.traverse(o=>{if(o.isMesh)o.castShadow=true});
  return {root:fig.root,kit:fig};
 }
 function apply(id){
@@ -48,7 +45,7 @@ function setupPreview(){if(previewRenderer)return;previewRenderer=new T.WebGLRen
 function sizePreview(){const r=stage.getBoundingClientRect();if(r.width&&r.height){previewRenderer.setSize(r.width,r.height);previewCamera.aspect=r.width/r.height;previewCamera.updateProjectionMatrix()}}
 // The preview gets its own copy of the character, so it can turn and walk without touching the one in the city.
 function refreshPreview(){if(!open)return;setupPreview();const s=styles.find(v=>v.id===selected);if(previewGroup)previewScene.remove(previewGroup);previewGroup=new T.Group();previewGroup.position.y=.12;
- if(!previewKits.has(s.id))previewKits.set(s.id,s.cat?window.createCityCat(T,s).kit:FK.create(T,s.id));previewKit=previewKits.get(s.id);
+ if(!previewKits.has(s.id))previewKits.set(s.id,s.cat?window.createCityCat(T,s).kit:figure(s.id));previewKit=previewKits.get(s.id);
  if(s.cat)previewKit.setState('stand');previewGroup.add(previewKit.root);previewScene.add(previewGroup);
  const h=s.cat?2:previewKit.height();previewCamera.position.set(0,h*.62+.35,h*1.75+.9);previewCamera.lookAt(0,h*.5,0);sizePreview();renderPreview()}
 function renderPreview(){if(!previewGroup)return;previewGroup.rotation.y=angle;previewRenderer.render(previewScene,previewCamera)}

@@ -4,7 +4,9 @@ const ctx = { window: {}, Math, console };
 vm.createContext(ctx);
 for (const f of ['figure-kit.js', 'figure-cast.js']) vm.runInContext(fs.readFileSync(__dirname + '/' + f, 'utf8'), ctx);
 const Kit = ctx.window.FigureKit, ids = Object.keys(Kit.cast);
-assert.equal(ids.length, 12, 'twelve characters');
+assert.deepEqual(ids, ['grandma', 'chief', 'grandpa', 'auntie', 'uncle', 'housewife', 'kid', 'taike'], 'only the eight approved people are registered');
+assert.equal(ids.map(id => Kit.cast[id].name).join(), '買菜阿嬤,里長伯,散步阿公,菜市場大媽,汗衫阿伯,家庭主婦,幼稚園小朋友,八酒');
+for (const removed of ['mechanic', 'courier', 'griller', 'cook']) assert.throws(() => Kit.create(T, removed), /no character/, 'removed people cannot be created');
 for (const id of ids) {
   const fig = Kit.create(T, id);
   let tris = 0, meshes = 0;

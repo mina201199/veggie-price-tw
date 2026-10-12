@@ -1,4 +1,4 @@
-/* The twelve market folk, after the user's turnaround sheets. Each define() dresses the shared FigureKit rig;
+/* The eight approved market folk, after the user's turnaround sheets. Each define() dresses the shared FigureKit rig;
    hair, hats and props that only one character needs live here. Sides follow the character: L is her/his left (+x). */
 (function (global) {
   'use strict';
@@ -468,44 +468,6 @@
     }
   });
 
-  FK.define('mechanic', {
-    name: '修車師傅', role: '機車行的黑手', skin: '#ebbb9a', build: { girth: 1.06, belly: .2 },
-    items: ['連身工作服', '肩上毛巾', '活動扳手', '工具腰包'],
-    build(k) {
-      k.face({ brow: '#221a16', browW: 16, browShape: 'flat', stubble: 1, dirt: 1, mouthW: .055 });
-      const cov = k.mat({ pattern: 'coverall' }, { roughness: .9 }), roll = k.cloth('#8994a0');
-      k.top({ m: k.cloth('#8f9195'), y0: .3, off: .008 });
-      k.top({ m: cov, y0: -.14, off: .03, open: y => .4 * k.smooth(.38, .62, y), sleeves: 'short', sleeveLen: .6, cuff: { m: roll, h: .04 } });
-      k.collar('shirt', cov, { open: .55 });
-      for (const s of [-1, 1]) k.pocket(cov, s * .5, .33, .1, .1, { flap: true, off: .03 });
-      k.pants({ m: cov, length: 'long', loose: 1.1, cuff: { m: roll, h: .05 } });
-      k.belt('#3d5a6c', null, .12);
-      const knot = k.torsoPoint(.1, .12, .05);
-      k.add(new k.T.SphereGeometry(.03, 12, 10), cov, k.spine, knot.x, knot.y, knot.z).scale.set(1.3, .8, .7);
-      for (const s of [-1, 1]) k.add(k.strand([knot.clone(), k.V(knot.x + s * .03, knot.y - .06, knot.z + .01), k.V(knot.x + s * .02, knot.y - .12, knot.z)], { width: .022, thick: .006, segs: 8, up: () => k.V(0, 0, 1) }), cov, k.spine);
-      for (const l of Object.values(k.legs)) { const pk = k.add(k.roundRect(.09, .1, .015, .025), cov, l.hip, l.s * .118, -.2, 0); pk.rotation.y = l.s * Math.PI / 2; }
-      k.shoes({ type: 'boot', color: '#2a2522', sole: '#171514', laces: '#3a3330', soleH: .04, wide: 1.06 });
-      k.towel('R', {});
-      const smudge = k.pattern('smudge');
-      for (const s of ['L', 'R']) sleeveDecal(k, s, smudge, .05, .95, .4);
-      scalp(k, { edge: shortEdge(.6, .95, 1.45, 2.0), lift: .025, color: '#251f1c' });
-      const sp = [], dk = ['#211b18', '#342c28'], gr = ['#6f6a66', '#8f8a86'];
-      for (let i = 0; i < 50; i++) {
-        const phi = (k.rand(i) * 2 - 1) * Math.PI, th = .05 + k.rand(i + 1) * (Math.abs(phi) < 1 ? .6 : .95), out = dirOf(k, phi, th);
-        sp.push([phi, th, k.V(out.x * .5 + (k.rand(i + 5) - .5) * .6, .8 + k.rand(i + 6) * .4, out.z * .4 - .25 + (k.rand(i + 7) - .5) * .5), .09 + k.rand(i + 2) * .06, k.rand(i + 3) > .82 ? gr : dk]);
-      }
-      for (let i = 0; i < 6; i++) sp.push([(i - 2.5) * .22, .55, k.V((i - 2.5) * .15, -.55, 1), .13, dk]);
-      spikes(k, sp, { width: .085, thick: .042, taper: t => 1 - .7 * t });
-      const pouch = k.G(k.spine);
-      k.add(k.roundRect(.12, .14, .02, .05), k.mat('#7a5233', { roughness: .7 }), pouch);
-      for (const [x, c, hgt] of [[-.03, '#c62e2e', .07], [.0, '#d8b23a', .09], [.03, '#c62e2e', .06]]) k.add(new k.T.CylinderGeometry(.009, .009, hgt, 8), k.mat(c, { roughness: .5 }), pouch, x, .07 + hgt / 2 - .02, 0);
-      k.add(new k.T.CylinderGeometry(.004, .004, .07, 6), steel(k), pouch, .015, .1, 0);
-      k.onTorso(pouch, 1.25, -.06, .09);
-      k.pose({ R: { pitch: .12, abd: .24, bend: .35, curl: 1.3 }, L: { pitch: .04, abd: .22, bend: .25, curl: .6 } });
-      k.hold('R', wrench(k), [0, 0, 0], [Math.PI / 2 + .9, 0, -.3]);
-    }
-  });
-
   FK.define('grandpa', {
     name: '散步阿公', role: '拄著拐杖逛市場', skin: '#f1ccb4', build: { girth: 1.03, belly: .25 },
     items: ['米色襯衫', '木頭拐杖', '紅色佛珠', '黑布鞋'],
@@ -532,52 +494,9 @@
     }
   });
 
-  FK.define('courier', {
-    name: '外送員', role: '騎車送餐的外送小姐', skin: '#f6d3bf', build: { girth: .98 },
-    items: ['青綠安全帽', '黃色連帽外套', '外送保溫箱', '露指手套'],
-    build(k) {
-      k.face({ brow: '#5a3b2c', browW: 10, lashes: true, mouthW: .045 });
-      const yellow = k.cloth('#e9b53c'), rib = k.mat({ pattern: 'rib', tint: '#e2a92f' }, { roughness: .9 });
-      k.top({ m: k.cloth('#f7f5f0'), y0: .25, off: .008 });
-      k.top({ m: yellow, y0: -.16, off: .034, open: y => .22 * k.smooth(.3, .6, y), sleeves: 'long', cuff: { m: rib, h: .05 }, hem: { m: rib, h: .045 } });
-      const zip = []; for (let y = -.2; y <= .5; y += .05) zip.push(k.torsoPoint(.03, y, .04));
-      k.add(k.strand(zip, { width: .005, thick: .004, segs: 20, radial: 6, axis: p => k.V(0, p.y, 0) }), k.mat('#f0f0f0', { metalness: .5, roughness: .3 }), k.spine);
-      const hood = k.add(new k.T.TorusGeometry(.15, .045, 10, 36, Math.PI * 1.25), yellow, k.spine, 0, .62, -.02);
-      hood.geometry.rotateZ(Math.PI / 2 - Math.PI * .625); hood.geometry.rotateX(-Math.PI / 2); hood.scale.set(1, 1, .9);
-      const black = k.cloth('#2c2a2b');
-      k.pants({ m: black, length: 'long', taper: true, cuff: { m: black, h: .05 } });
-      for (const l of Object.values(k.legs)) { const pk = k.add(k.roundRect(.08, .1, .015, .025), black, l.hip, l.s * .12, -.2, 0); pk.rotation.y = l.s * Math.PI / 2; }
-      k.shoes({ type: 'sneaker', color: '#f0efed', sole: '#d6d6d6', accent: '#9a9a9a', laces: '#ffffff' });
-      gloves(k, '#232222');
-      const hair = ['#5f3c2a', '#7a5038'];
-      for (const s of [-1, 1]) for (let i = 0; i < 3; i++) clump(k, [at(k, s * (.55 + i * .17), 1.0, .04), at(k, s * (.62 + i * .18), 1.3, .05), at(k, s * (.66 + i * .2), 1.62 + i * .05, .04)], { width: .05, thick: .018, segs: 14, colors: hair });
-      for (let i = 0; i < 5; i++) clump(k, [at(k, -.3 + i * .15, 1.0, .04), at(k, -.32 + i * .16, 1.1, .05)], { width: .05, thick: .018, segs: 8, colors: hair });
-      const tail = k.V(0, -.13, -.46);
-      for (let i = 0; i < 7; i++) {
-        const o = (i - 3) * .016;
-        clump(k, [tail.clone(), k.V(o, -.19, -.56), k.V(o * 1.4 + .02, -.36, -.58), k.V(o + .03, -.56 + k.rand(i) * .05, -.52)], { width: .052, thick: .028, segs: 20, colors: hair, taper: t => .9 - .7 * t });
-      }
-      k.add(new k.T.TorusGeometry(.035, .014, 8, 16), k.mat('#2a2a2a'), k.head, 0, -.15, -.5).rotation.x = .9;
-      helmet(k, { color: '#2e9c95' });
-      // Insulated delivery box on the back, with straps over the shoulders and a phone harness in front.
-      const box = k.G(k.spine, 0, .32, -.47), coral = k.mat('#f2806e', { roughness: .8 }), edgeM = k.mat('#a8453f', { roughness: .8 }), refl = k.mat('#eef0f3', { roughness: .25, metalness: .3, emissive: '#6d7178' });
-      k.add(k.roundRect(.6, .54, .06, .36, .018), coral, box);
-      for (const y of [-.16, .16]) k.add(k.roundRect(.652, .042, .004, .4, .002), refl, box, 0, y, 0);
-      for (const x of [-.322, .322]) k.add(k.roundRect(.016, .57, .006, .4, .002), edgeM, box, x, 0, 0);
-      const strapM = k.mat('#7a2a2e', { roughness: .7 });
-      for (const s of [-1, 1]) k.add(k.strand([k.V(s * .14, .56, -.29), k.V(s * .17, .67, -.05), k.V(s * .2, .61, .15), k.torsoPoint(s * .72, .45, .045), k.torsoPoint(s * 1.35, .32, .045)], { width: .03, thick: .008, segs: 24, axis: p => k.V(0, p.y, 0) }), strapM, k.spine);
-      k.add(k.lathe([[0, .29], [0, .325]], { seg: 48, zs: k.dims.TZ, rad: k.torsoRad(.045), range: () => [-1.1, 1.1] }), k.mat('#1d1d1f', { roughness: .7 }), k.spine);
-      const phone = k.G(k.spine), pm = k.mat('#1b1b1d', { roughness: .4 });
-      k.add(k.roundRect(.09, .15, .015, .02), pm, phone);
-      k.add(k.roundRect(.1, .05, .01, .03), k.mat('#2c2c2e', { roughness: .6 }), phone, 0, -.04, -.012);
-      k.onTorso(phone, 0, .31, .075);
-      k.pose({ R: { pitch: .04, abd: .42, bend: .12, curl: .45 }, L: { pitch: .04, abd: .42, bend: .12, curl: .45 } });
-    }
-  });
-
   FK.define('auntie', {
-    name: '菜市場阿姨', role: '提著菜籃的老主顧', skin: '#f2c8b0', build: { girth: 1.16, belly: .55 },
-    items: ['捲捲燙髮', '透明遮陽帽', '花襯衫', '綠色菜籃'],
+    name: '菜市場大媽', role: '歪頭殺價的市場老手', skin: '#f2c8b0', build: { girth: 1.16, belly: .55 },
+    items: ['米白安全帽', '灰色口罩', '紫色外套', '花手套', '紅白買菜袋'],
     build(k) {
       k.face({ brow: '#3a2620', browW: 13, lashes: true, mouthW: .06, blush: 1.2 });
       const shirt = k.mat({ pattern: 'hibiscus' }, { roughness: .85 });
@@ -660,27 +579,6 @@
     }
   });
 
-  FK.define('griller', {
-    name: '烤肉攤老闆', role: '夜市烤肉攤顧爐的老闆', skin: '#e5b08b', build: { girth: 1.1, belly: .35 },
-    items: ['深藍頭巾', '橘色圍裙', '烤肉夾', '竹編扇'],
-    build(k) {
-      k.face({ brow: '#231b17', browW: 16, browShape: 'flat', mouth: 'open', mouthW: .065, stubble: .9, blush: 1.1 });
-      const grey = k.cloth('#a9a8a6');
-      k.top({ m: grey, sleeves: 'short', sleeveLen: .65 });
-      k.collar('crew', grey);
-      apron(k, { m: k.cloth('#c9622d'), top: .42, bottom: -.34, w: .9, bibW: .52, pocket: { y: -.1, w: .2, h: .12 } });
-      k.towel('L', { stripe: '#4d63b8' });
-      k.pants({ m: k.cloth('#252323'), length: 'shorts', loose: 1.1 });
-      k.shoes({ type: 'clog', color: '#2a3045', sole: '#232838', holes: true, wide: 1.08 });
-      scalp(k, { edge: shortEdge(.6, .95, 1.5, 2.05), lift: .02, color: '#1f1a18' });
-      spikes(k, [-.5, -.3, -.12, .08, .28, .48].map((phi, i) => [phi, 1.0, k.V(phi * .3, -.6, 1), .07, ['#1f1a18', '#2e2724']]), { width: .045, thick: .02 });
-      bandana(k, { color: '#2f3658', front: 1.0, tailDrop: .02 });
-      k.pose({ R: { pitch: .1, abd: .26, bend: .3, curl: 1.3 }, L: { pitch: .1, abd: .28, bend: .35, curl: 1.3 } });
-      k.hold('R', tongs(k), [0, 0, 0], [Math.PI / 2 + 1.25, 0, 0]);
-      k.hold('L', fan(k), [0, 0, 0], [.35, 0, .2]);
-    }
-  });
-
   FK.define('kid', {
     name: '幼稚園小朋友', role: '放學跟家人來買菜', skin: '#f8d9c7', scale: .86, build: { head: 1.1, legs: .88, girth: .92, arm: .9, leg: .9 },
     items: ['黃色小帽', '小熊後背包', '束口袋', '魔鬼氈球鞋'],
@@ -715,7 +613,7 @@
   });
 
   FK.define('taike', {
-    name: '台客小哥', role: '穿藍白拖來喝飲料', skin: '#f2ccb3', build: { girth: 1 },
+    name: '八酒', role: '穿藍白拖來喝飲料', skin: '#f2ccb3', build: { girth: 1 },
     items: ['油頭推剪', '金項鍊', '黑色胸包', '刺青', '破洞牛仔褲'],
     build(k) {
       k.face({ brow: '#2a201b', browW: 15, browShape: 'flat', browSlit: true, mouthW: .05 });
@@ -746,27 +644,4 @@
     }
   });
 
-  FK.define('cook', {
-    name: '自助餐阿姨', role: '自助餐檯後面打菜', skin: '#f2ccb5', build: { girth: 1.12, belly: .4 },
-    items: ['碎花頭巾', '綠色圍裙', '鍋鏟', '夾子'],
-    build(k) {
-      k.face({ brow: '#3a2620', browW: 12, lashes: true, mouth: 'open', mouthW: .06, blush: 1.15 });
-      const yel = k.cloth('#f0dc98');
-      k.top({ m: yel, sleeves: 'short', sleeveLen: .62, cuff: { m: k.cloth('#e6cf86'), h: .035 } });
-      k.collar('polo', yel);
-      apron(k, { m: k.cloth('#2f8f74'), top: .44, bottom: -.3, w: .92, bibW: .5, ties: 'cross', pocket: { y: -.08, w: .2, h: .11 } });
-      const black = k.cloth('#2b2827');
-      k.pants({ m: black, length: 'capri', loose: 1.05, cuff: { m: black, h: .045 } });
-      k.shoes({ type: 'clog', color: '#232120', sole: '#1a1918', wide: 1.06 });
-      const hc = ['#3a261f', '#4b3229'];
-      scalp(k, { edge: shortEdge(.75, 1.05, 1.6, 2.1), lift: .02, color: hc[0] });
-      for (const s of [-1, 1]) for (let i = 0; i < 3; i++) clump(k, [at(k, s * (.08 + i * .2), .9, .05), at(k, s * (.4 + i * .2), 1.05, .06), at(k, s * (.85 + i * .12), 1.3 + i * .06, .05)], { width: .05, thick: .02, segs: 14, colors: hc });
-      for (const s of [-1, 1]) clump(k, [at(k, s * 1.05, 1.2, .04), at(k, s * 1.1, 1.5, .05), at(k, s * 1.0, 1.8, .06).add(k.V(0, 0, .03))], { width: .022, thick: .012, segs: 12, colors: hc, taper: t => 1 - .8 * t });
-      const bun = k.add(new k.T.SphereGeometry(.12, 16, 12), k.mat(hc[0], { roughness: .6 }), k.head, 0, -.17, -.38); bun.scale.set(1.1, .9, .8);
-      bandana(k, { pattern: 'bandana', front: .95, puff: .015 });
-      k.pose({ R: { pitch: .1, abd: .28, bend: .3, curl: 1.3 }, L: { pitch: .1, abd: .28, bend: .3, curl: 1.3 } });
-      k.hold('R', spatula(k), [0, 0, 0], [Math.PI / 2 + 1.25, 0, 0]);
-      k.hold('L', tongs(k), [0, 0, 0], [Math.PI / 2 + 1.25, 0, 0]);
-    }
-  });
 })(typeof window !== 'undefined' ? window : globalThis);
