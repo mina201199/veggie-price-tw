@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const {bind}=require('./camera-controls.js');
+const events={},canvas={addEventListener:(n,f)=>events[n]=f,setPointerCapture(){}};
+let zoom=1,yaw=0;
+bind(canvas,{getZoom:()=>zoom,setZoom:v=>zoom=v,rotate:v=>yaw+=v});
+const p=(id,x,y=0)=>({pointerId:id,clientX:x,clientY:y});
+events.pointerdown(p(1,0));events.pointerdown(p(2,100));
+events.pointermove(p(2,200));assert.equal(zoom,.65,'spreading fingers moves closer, within limit');assert.equal(yaw,0,'pinch does not rotate');
+events.pointermove(p(2,20));assert.equal(zoom,3,'pinching pulls back, within limit');
+events.pointerup(p(2,20));events.pointermove(p(1,10));assert.equal(yaw,-.08,'remaining finger resumes drag without a jump');
+events.pointercancel(p(1,10));events.pointermove(p(1,30));assert.equal(yaw,-.08,'cancel stops dragging');
+let prevented=false;events.wheel({deltaY:-100,deltaMode:0,preventDefault(){prevented=true}});assert.ok(zoom<3&&prevented,'wheel zooms without scrolling page');
+events.pointerdown(p(3,40));events.lostpointercapture(p(3,40));events.pointermove(p(3,60));assert.equal(yaw,-.08,'lost capture clears gesture');
+const before=yaw;events.pointerdown(p(4,0));events.pointermove(p(4,Math.PI*2/.008));events.pointerup(p(4,Math.PI*2/.008));assert.ok(Math.abs(yaw-before+Math.PI*2)<1e-10,'drag rotates a full 360 degrees without clamping');
+console.log('Camera gestures: PASS');

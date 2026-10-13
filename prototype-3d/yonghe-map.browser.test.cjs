@@ -1,0 +1,82 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const root = path.resolve(__dirname, '..');
+const port = Number(process.env.YONGHE_TEST_PORT || 8891);
+const url = `http://127.0.0.1:${port}`;
+const python = process.env.MAP_TEST_PYTHON || 'python';
+let server, browser;
+(async () => {
+  try {
+    server = spawn(python, ['-m', 'http.server', String(port), '--bind', '127.0.0.1', '--directory', __dirname], { windowsHide: true, stdio: 'ignore' });
+    for (let i = 0; i < 50; i++) {
+      try { if ((await fetch(url + '/index.html')).ok) break; } catch {}
+      await new Promise(r => setTimeout(r, 150));
+    }
+    browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    const response = await page.goto(url + '/yonghe-map.html');
+    assert.equal(response.status(), 200, 'The real Yonghe map must be available');
+    await page.locator('.venue-card').first().waitFor();
+    assert.equal(await page.locator('.venue-card').count(), 9);
+    assert.equal(await page.locator('.venue-marker').count(), 9);
+    await page.getByRole('button', { name: '市場 2', exact: true }).click();
+    assert.equal(await page.locator('.venue-card').count(), 2);
+    assert.equal(await page.locator('.venue-marker').count(), 2);
+    await page.locator('[data-venue="market-xizhou"]').click();
+    assert.match(await page.locator('#placeDetail').textContent(), /勵行街42-1號/);
+    assert.equal(await page.locator('#directions').getAttribute('href'), 'https://www.google.com/maps/dir/?api=1&destination=25.0134505%2C121.5165574&travelmode=walking');
+    await page.getByRole('button', { name: '超市 7', exact: true }).click();
+    assert.equal(await page.locator('.venue-card').count(), 7);
+    assert.equal(await page.locator('#placeDetail').isVisible(), false, 'Changing filters must clear a hidden selected market');
+    await page.getByRole('searchbox').fill('竹林路73');
+    assert.equal(await page.locator('.venue-card').count(), 1);
+    await page.locator('.venue-card').click();
+    assert.match(await page.locator('#placeDetail').textContent(), /全聯永和竹林/);
+    await page.getByRole('searchbox').fill('找不到的地點');
+    assert.equal(await page.locator('.venue-card').count(), 0);
+    assert.equal(await page.locator('#emptyState').isVisible(), true);
+    assert.equal(await page.locator('#placeDetail').isVisible(), false);
+    await page.getByRole('searchbox').fill('');
+    await page.getByRole('button', { name: '全部 9', exact: true }).click();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Mobile layout should not overflow horizontally');
+    assert.match(await page.locator('.leaflet-control-attribution').textContent(), /OpenStreetMap/);
+    const offline = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await offline.route('https://tile.openstreetmap.org/**', route => route.abort());
+    await offline.goto(url + '/yonghe-map.html');
+    await offline.locator('#tileStatus').waitFor({ state: 'visible' });
+    assert.equal(await offline.locator('.venue-card').count(), 9, 'Place cards remain usable when street tiles fail');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: '查看全部地點' }).click();
+    await page.waitForFunction(() => { const images = [...document.querySelectorAll('.leaflet-tile')]; return images.length > 0 && images.every(i => i.complete && i.naturalWidth > 0); });
+    fs.mkdirSync(path.join(root, 'private'), { recursive: true });
+    await page.screenshot({ path: path.join(root, 'private', 'yonghe-map-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(350);
+    await page.getByRole('button', { name: '查看全部地點' }).click();
+    await page.waitForFunction(() => { const images = [...document.querySelectorAll('.leaflet-tile')]; return images.length > 0 && images.every(i => i.complete && i.naturalWidth > 0); });
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: path.join(root, 'private', 'yonghe-map-mobile.png'), fullPage: true });
+    const legacy = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await legacy.goto(url + '/index.html');
+    await legacy.locator('#avatarTrigger').waitFor();
+    const mapEntry = await legacy.locator('#realMapLink').boundingBox();
+    const avatarEntry = await legacy.locator('#avatarTrigger').boundingBox();
+    assert.ok(mapEntry.y >= avatarEntry.y + avatarEntry.height || mapEntry.x >= avatarEntry.x + avatarEntry.width, 'Real map entry must not cover the character chooser');
+    await legacy.locator('#loading').waitFor({ state: 'hidden' });
+    await legacy.locator('#realMapLink').click();
+    await legacy.locator('.venue-card').first().waitFor();
+    assert.equal(await legacy.locator('.venue-card').count(), 9, 'Legacy 3D entry opens the real map');
+    const prices = await browser.newPage();
+    await prices.goto(url + '/prices.html');
+    const priceMapEntry = prices.getByRole('link', { name: '⌖ 採買地圖' });
+    assert.equal(await priceMapEntry.getAttribute('href'), 'yonghe-map.html');
+    assert.deepEqual(errors, [], 'No page JavaScript errors');
+    console.log('PASS: real tiles and 9 places, filtering, selection and directions, search/empty states, mobile layout, offline tiles');
+  } catch (e) { console.error(e); process.exitCode = 1; }
+  finally { if (browser) await browser.close(); if (server) server.kill(); }
+})();

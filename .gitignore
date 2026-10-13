@@ -17,6 +17,11 @@ __pycache__/
 /prototype-3d/*.png
 /private/
 /exports/
+# Blender 工作檔與產生的貼圖、預覽圖（blender/grandma_build.py 會重建；模型以 prototype-3d/models/*.glb 為準）
+/blender/*.blend
+/blender/*.blend1
+/blender/textures/
+/blender/previews/
 
 # 憑證與本機設定；不影響已追蹤檔案
 .env
@@ -24,3 +29,14 @@ __pycache__/
 *.pem
 *.key
 credentials*.json
+
+# Bookkeeping backend private runtime data
+/.venv/
+/backend/data/
+!prototype-3d/app-icon.png
+!prototype-3d/app-icon-512.png
+
+/deploy/backend.env
+
+# GPS Sites checkout has its own source repository
+/hosted/gps-map/

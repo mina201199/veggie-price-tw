@@ -56,16 +56,17 @@ const ym=s=>`${s.slice(0,4)}/${+s.slice(5,7)}`;
 function stallSection(x,state){
   const box=el('section',undefined,'stall'),re=dataset.retail&&dataset.retail[x.name];
   box.append(el('h3','攤販賣多少？幫你看合不合理'));
-  if(!re){box.append(el('p','最近批發市場沒有這樣菜的行情，沒辦法估一般零售價。','sub'));return box;}
+  if(!re){box.append(el('p','沒有這項食材的零售估計，仍可對照自己的購買紀錄。','sub'));}
   const row=el('div',undefined,'stall-row'),price=document.createElement('input'),qty=document.createElement('input'),unit=document.createElement('select');
   Object.assign(price,{type:'number',min:'0',step:'1',inputMode:'decimal',placeholder:'例如 60'});Object.assign(qty,{type:'number',min:'0',step:'0.1',inputMode:'decimal',value:'1'});
   for(const u of ['台斤','公斤','公克'])unit.append(new Option(u,u));
   price.setAttribute('aria-label','攤販開的價格（元）');qty.setAttribute('aria-label','重量');unit.setAttribute('aria-label','重量單位');
   const lp=el('label','價格 '),lq=el('label','重量 ');lp.append(price,document.createTextNode(' 元'));lq.append(qty,unit);row.append(lp,lq);
   const out=el('div',undefined,'stall-out');out.setAttribute('aria-live','polite');
-  const range=`一般零售大約 ${Math.round(re.lo)}–${Math.round(re.hi)} 元／台斤（約 ${Math.round(re.lo/.6)}–${Math.round(re.hi/.6)} 元／公斤）`;
+  const range=re?`一般零售大約 ${Math.round(re.lo)}–${Math.round(re.hi)} 元／台斤（約 ${Math.round(re.lo/.6)}–${Math.round(re.hi/.6)} 元／公斤）`:'';
   function update(){
     out.replaceChildren();
+    if(!re||state.stale){out.className='stall-out';out.append(el('span',state.stale?'行情超過 7 天未更新，暫不判斷現在的零售價格；可對照自己的上次採買。':'尚無零售估計，請對照自己的上次採買。'));return;}
     const pJin=Prices.perJin(Number(price.value),Number(qty.value),unit.value);
     if(pJin===null){out.className='stall-out';out.append(el('span',`行情參考：${range}。`));return;}
     const v=Prices.judgeStall(re,pJin,state.tone);
@@ -74,10 +75,13 @@ function stallSection(x,state){
   }
   for(const i of [price,qty,unit])i.addEventListener('input',update);
   update();
+  box.append(row,out);
+  window.PriceShopping?.attachQuote(box,x,{price,qty,unit});
+  if(!re)return box;
   const src=dataset.retailSource,how=re.src==='item'?`依臺北市公有零售市場 ${ym(src.from)}–${ym(src.to)} 共 ${re.months} 個月的零售價，對照同月批發價推算，平均誤差約 ±${Math.round(re.err*100)}%。`
     :re.src==='twin'?`臺北市零售行情沒有分進口，這裡借用國產${re.twin}的零售和批發關係推算，參考就好。`
     :'臺北市零售行情沒有這一項，用同類菜的平均加價倍數估計，範圍放得比較寬，參考就好。';
-  box.append(row,out,el('p',`以「${x.name}」所有品種合計的近 14 天批發價估計。${how}一般零售範圍只是參考，不代表任何攤商的實際售價。`,'sub'));
+  box.append(el('p',`以「${x.name}」所有品種合計的近 14 天批發價估計。${how}一般零售範圍只是參考，不代表任何攤商的實際售價。`,'sub'));
   return box;
 }
 function showDeals(items,title,empty){mode={items,title,empty};limit=24;render();}
@@ -85,7 +89,7 @@ function showAll(){mode=null;limit=24;render();}
 async function load(){
   $('error').hidden=true;$('cards').setAttribute('aria-busy','true');$('cards').replaceChildren(el('p','正在讀取行情…'));$('more').hidden=true;
   try{
-    const response=await fetch('prices-data.json',{cache:'no-store'});if(!response.ok)throw new Error('Unable to load');
+    const response=await fetch(location.pathname.startsWith('/app/')?'/api/v1/prices/':'prices-data.json',{cache:'no-store'});if(!response.ok)throw new Error('Unable to load');
     const data=await response.json();if(data.schema!==1||!Array.isArray(data.items))throw new Error('Invalid data');dataset=data;
     $('dataDate').textContent=data.latest?(data.latest===today()?`今日已有交易資料：${data.latest}`:`最新可用行情：${data.latest}（非今日）`):'目前沒有可用行情';
     $('dataScope').textContent=`${data.source} · 新臺幣／公斤`;

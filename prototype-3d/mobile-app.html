@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#244f42"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>菜市記 · 採買記帳</title>
+<link rel="manifest" href="app.webmanifest"><link rel="icon" href="app-icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="app-icon.png">
+<link rel="stylesheet" href="mobile-app.css">
+</head>
+<body>
+<noscript><p>請啟用 JavaScript，才能登入、儲存採買記帳。</p></noscript>
+<header class="topbar"><a class="wordmark" href="./"><span class="logo" aria-hidden="true">菜</span><span>菜市記<small>把每一餐，記得剛剛好。</small></span></a><button id="refresh" class="icon-button" aria-label="重新讀取資料">↻</button></header>
+<main>
+<div id="status" role="status" aria-live="polite" class="status" hidden></div>
+<section id="authPanel" class="auth-panel">
+<div class="eyebrow">你的採買，安心留存</div><h1>記下花費，<br>留給下一次採買的自己。</h1><p>登入後，採買紀錄會儲存在這個服務的資料庫。用同一帳號，即可在不同裝置查看。</p>
+<form id="authForm"><label>帳號<input name="username" autocomplete="username" required maxlength="150" autocapitalize="none" spellcheck="false" placeholder="輸入你的帳號"></label><label>密碼<input name="password" type="password" autocomplete="current-password" required maxlength="128" minlength="8" placeholder="至少 8 個字元"></label><button class="primary" type="submit" id="authSubmit">登入</button></form>
+<button id="toggleAuth" class="text-button">第一次使用？建立帳號</button><p class="hint">資料庫在伺服器上；同 Wi‑Fi 測試時，電腦需要持續開啟。離線時不能儲存。</p>
+<a class="secondary link-button" href="../legacy/notebook.html">開啟原本的本機採買筆記</a>
+<a class="secondary link-button" href="app.html?view=world">GPS 角色地圖 · 大園／中壢試走</a>
+</section>
+<div id="signedIn" hidden>
+<section id="homePanel" data-panel="home">
+<div class="section-heading"><div><div class="eyebrow" id="greeting">每一筆，都有著落</div><h1>今天也好好吃飯。</h1></div><span class="leaf" aria-hidden="true"><svg width="44" height="56" viewBox="0 0 44 56" fill="none"><path d="M22 50V13" stroke="#849d70" stroke-width="3" stroke-linecap="round"/><path d="M22 30C5 29 3 17 4 10c14 0 21 7 18 20ZM22 39c16-1 20-11 19-19-14 0-22 7-19 19Z" fill="#b7bc94"/></svg></span></div>
+<div class="spend-card"><label for="month">採買支出<input id="month" type="month" aria-label="查詢支出月份"></label><div class="spend-value"><span>NT$</span><strong id="monthTotal">—</strong></div><div id="monthCount">正在讀取…</div><p>以購買日期計算每筆採買總價，修正價格不重複計帳。</p></div>
+<div class="quick-actions"><button id="quickPurchase" class="primary">＋ 記一筆採買</button><button class="secondary" data-go="expenses">查看採買帳本 →</button></div>
+<div class="account-card"><h2>這一趟，買得有底。</h2><p>出門前看行情、加入待買清單；現場比價格，買完直接帶入帳本。</p><a class="primary link-button" href="prices.html">看行情與待買清單 →</a></div>
+<div class="account-card"><h2>讓角色陪你一起走。</h2><p>從大園、中壢開始，開啟手機定位，在真實街道地圖上漫遊。</p><a class="secondary link-button" href="app.html?view=world">開啟 GPS 角色地圖 →</a></div>
+
+<div class="section-heading compact"><h2>最近採買</h2><button class="text-button" data-go="expenses">查看全部 →</button></div><div id="recentNotes" class="card-list"></div>
+</section>
+<section data-panel="expenses" hidden><div class="section-heading"><div><div class="eyebrow">每一餐的足跡</div><h1>採買帳本</h1></div><button id="addPurchase" class="primary small">＋ 記一筆</button></div><label class="search-label">搜尋商品／店家<input id="noteSearch" type="search" placeholder="雞蛋、全聯、晚餐…"></label><p class="hint">點選紀錄可查看照片與修訂歷史，或修正內容。</p><div id="notesList" class="card-list"></div><button id="loadMore" class="secondary full" hidden>載入更多</button></section>
+
+<section data-panel="account" hidden><div class="eyebrow">你的資料，你來保管</div><h1>帳號與備份</h1><div class="account-card"><h2 id="accountName"></h2><p>目前使用伺服器資料。登出不會刪除資料，下次登入可以繼續查看。</p><button id="logout" class="secondary full">登出</button></div><div class="account-card"><h2>匯出與還原</h2><p>匯出你的採買紀錄與照片。檔案包含私人內容，請妥善保存。</p><button id="exportBackup" class="secondary full">下載我的完整備份</button><button id="importBackup" class="secondary full">從備份檔匯入</button><input id="backupFile" type="file" accept="application/json,.json" hidden></div><div class="account-card"><h2>搬移原本的本機筆記</h2><p>只會讀取這個網址下的舊瀏覽器筆記。不同網址或另一台裝置的資料，請先在舊筆記頁匯出備份。匯入前會顯示筆數供你確認。</p><button id="importLocal" class="secondary full">檢查本機筆記並匯入</button><a href="../legacy/notebook.html" class="text-button">開啟舊筆記頁 →</a></div><div class="account-card"><h2>在 iPhone 使用</h2><p>用 Safari 開啟本頁，點「分享」→「加入主畫面」。儲存需要連上伺服器；正式 HTTPS 部署後才能在外出時使用。</p><p class="hint">這是可加入主畫面的網頁 App，不需從 App Store 安裝。照片可從相機或相簿選取；AI 辨識尚未接入。</p></div></section>
+</div>
+</main>
+<nav id="bottomNav" class="bottom-nav" aria-label="主要功能" hidden><button data-go="home" aria-current="page"><span aria-hidden="true">⌂</span>總覽</button><button data-go="expenses"><span aria-hidden="true">▤</span>記帳</button><button data-go="account"><span aria-hidden="true">◉</span>我的</button></nav>
+<dialog id="purchaseDialog"><form id="purchaseForm"><div class="dialog-title"><h2 id="purchaseTitle">記一筆採買</h2><button type="button" data-close="purchaseDialog" class="icon-button" aria-label="關閉">✕</button></div><p class="hint" id="purchaseHint">填入這次採買的總金額，可選填重量或數量。</p>
+<label>商品名稱<input name="product" required maxlength="200" placeholder="例如：雞蛋"></label><label>購買地點<input name="venue" required maxlength="200" placeholder="例如：全聯中山店"></label><div class="form-grid"><label>總金額（NT$）<input name="price" type="number" inputmode="decimal" min="0.01" max="1000000" step="0.01" required></label><label>購買日期<input name="date" type="date" required></label></div><div class="form-grid"><label>數量／重量<input name="quantity" type="number" inputmode="decimal" min="0.001" max="1000000" step="0.001" placeholder="可留空"></label><label>單位<select name="unit" data-units></select></label></div>
+<label>備註<textarea name="notes" rows="2" maxlength="2000" placeholder="例如：晚餐用、特價…"></textarea></label><label>附收據／標價照片（選填）<input id="purchasePhoto" type="file" accept="image/*"></label><img id="photoPreview" class="photo-preview" alt="待儲存的照片" hidden><p id="purchaseError" class="form-error" role="alert" hidden></p><button type="submit" class="primary full" id="savePurchase">儲存採買</button></form></dialog>
+
+
+<dialog id="detailDialog"><div class="dialog-title"><h2>採買詳情</h2><button type="button" data-close="detailDialog" class="icon-button" aria-label="關閉">✕</button></div><div id="detailContent"></div><button id="editPurchase" class="primary full">修正這筆採買</button><button id="deletePurchase" class="danger full">刪除這筆採買</button><p class="hint">修正會保留舊版本；刪除後不再計入本月支出。</p></dialog>
+<dialog id="importDialog"><h2>確認匯入帳號</h2><p id="importSummary"></p><p class="hint">這次匯入會把備份中的私人筆記與照片傳送到目前登入的帳號。不刪除原本機資料。不同修改歷史會停止匯入。</p><p id="importError" class="form-error" role="alert" hidden></p><button id="confirmImport" class="primary full">確認匯入</button><button data-close="importDialog" class="secondary full">取消</button></dialog>
+<script src="mobile-core.js"></script><script src="notes-store.js"></script><script src="shopping-flow.js"></script><script src="photos.js"></script><script src="mobile-app.js"></script>
+</body></html>

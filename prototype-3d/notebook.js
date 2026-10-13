@@ -1,11 +1,11 @@
 (()=>{
 'use strict';
 const N=window.ShoppingNotes,P=window.NotePhotos,$=id=>document.getElementById(id),form=$('noteForm'),editor=$('noteEditor'),detail=$('noteDetail');
-let records=[],editingId=null,dirty=false;
+let records=[],editingId=null,dirty=false,flowProduct=null;
 // Accessing storage can itself throw in restricted browsers; surface the error.
 const storage={getItem:k=>window.localStorage.getItem(k),setItem:(k,v)=>window.localStorage.setItem(k,v)};
 const store=N.createStore(storage);
-function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function today(){return ShoppingFlow.today();}
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function error(target,message){target.textContent=message;target.hidden=!message}
 function money(v){return Number(v).toLocaleString('zh-TW',{maximumFractionDigits:2})}
@@ -40,6 +40,7 @@ function render(){
  }
 }
 function openEditor(record,repeat=false){
+ flowProduct=null;
  editingId=record&&!repeat?record.id:null;form.reset();error($('formError'),'');
  form.querySelectorAll('details').forEach(d=>d.open=false);
  if(record){const n=N.latest(record);for(const [key,val]of Object.entries(n)){const field=form.elements.namedItem(key);if(field){if(field.type==='checkbox')field.checked=val===true;else field.value=val??''}}}
@@ -156,7 +157,7 @@ $('addNote').onclick=()=>openEditor();$('closeEditor').onclick=requestClose;edit
 form.addEventListener('input',()=>{dirty=true;updatePreviews()});form.addEventListener('change',()=>{dirty=true;updatePreviews()});
  form.querySelectorAll('[data-experience]').forEach(b=>b.onclick=()=>{const f=form.elements.experience;f.value=f.value===b.dataset.experience?'':b.dataset.experience;dirty=true;updatePreviews();});
 form.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent&&parent!==form){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
-form.onsubmit=e=>{e.preventDefault();try{store.save(readInput(),editingId);dirty=false;editor.close();refresh();$('noteStatus').textContent=editingId?'已儲存修正，舊版本完整保留。':'私人筆記已儲存在這台裝置。未傳送任何資料。'}catch(e){error($('formError'),`未儲存：${e.message}。請檢查內容或瀏覽器儲存空間；表單內容已保留。`)}};
+form.onsubmit=e=>{e.preventDefault();try{const input=readInput();store.save(input,editingId);dirty=false;editor.close();refresh();$('noteStatus').textContent=editingId?'已儲存修正，舊版本完整保留。':'私人筆記已儲存在這台裝置。未傳送任何資料。';if(flowProduct&&input.product===flowProduct){try{ShoppingFlow.createPlan(localStorage,'local').remove(flowProduct);$('noteStatus').textContent+=' 已從待買清單移除，可以回行情頁繼續採買。';}catch(err){$('noteStatus').textContent+=` 筆記已儲存，但待買清單未更新：${err.message}`;}}flowProduct=null;}catch(e){error($('formError'),`未儲存：${e.message}。請檢查內容或瀏覽器儲存空間；表單內容已保留。`)}};
 $('searchNotes').oninput=render;
 let pendingBackup=null;
 $('importNotes').onclick=()=>{$('backupFile').value='';$('backupFile').click()};
@@ -189,4 +190,5 @@ $('confirmImport').onclick=async()=>{
 };
 $('exportNotes').onclick=async()=>{try{const doc=JSON.parse(store.exportJSON());doc.photos=await P.exportFor(N.photoIds(doc.records||[]));const blob=new Blob([JSON.stringify(doc)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=`shopping-notes-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('noteStatus').textContent=`已要求下載完整備份，內含私人心得、所有版本${doc.photos.length?`與 ${doc.photos.length} 張照片`:''}，請妥善保管。`}catch(e){error($('storageError'),`匯出失敗：${e.message}`)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});window.addEventListener('storage',e=>{if(e.key==='veggie-shopping-notes-v1')refresh()});refresh();
+if(new URLSearchParams(location.search).has('purchase')){try{const draft=ShoppingFlow.takeDraft(sessionStorage,'local');if(draft){openEditor();for(const key of ['product','spec','venue','price','quantity','unit'])form.elements[key].value=draft[key]??'';form.elements.date.value=today();if(!form.elements.unit.value)form.elements.unit.value='g';flowProduct=draft.product;dirty=true;updatePreviews();$('productOptions').open=!!draft.quantity;form.elements.venue.focus();}history.replaceState(null,'',location.pathname);}catch(e){error($('storageError'),e.message);}}
 })();

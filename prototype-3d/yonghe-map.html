@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#275a46"><meta name="referrer" content="strict-origin-when-cross-origin">
+<title>永和採買地圖 · 菜市漫遊</title>
+<link rel="stylesheet" href="vendor/leaflet.css"><link rel="stylesheet" href="yonghe-map.css">
+</head>
+<body>
+<header class="map-header">
+<a class="brand" href="prices.html"><span class="brand-mark">芽</span><span>菜市漫遊<small>把附近的好食材，慢慢找回來。</small></span></a>
+<nav aria-label="探索模式"><a href="index.html">3D 漫遊</a><a href="notebook.html">採買筆記 ↗</a></nav>
+</header>
+<main class="map-layout">
+<section class="map-region" aria-label="永和區真實街道地圖">
+<div id="map"></div>
+<div class="map-caption"><span class="live-dot"></span>新北市 · 永和區<span class="caption-small">真實街道</span></div>
+<button id="showAll" class="map-button" type="button" aria-label="查看全部地點">⌖<span>查看全部</span></button>
+<div id="tileStatus" class="tile-status" role="status" hidden>街道圖暫時無法載入，地點清單仍可查看。<button id="retryTiles" type="button">重新載入</button></div>
+</section>
+<aside class="places-panel" aria-label="永和採買地點">
+<div class="panel-intro"><div class="eyebrow">第一站，從永和開始</div><h1>今天想去哪裡買？</h1><p>從頂溪到竹林路，找一個順路的採買地點。</p></div>
+<div class="summary"><span><strong id="marketCount">—</strong> 座市場</span><span><strong id="supermarketCount">—</strong> 間超市</span><small>首批收錄</small></div>
+<label class="search-field"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜尋市場、分店或地址" aria-label="搜尋市場、分店或地址" autocomplete="off"></label>
+<div class="filters" role="group" aria-label="地點類型"><button data-kind="all" aria-pressed="true">全部 <span id="allCount">—</span></button><button data-kind="market" aria-pressed="false">市場 <span id="marketFilterCount">—</span></button><button data-kind="supermarket" aria-pressed="false">超市 <span id="supermarketFilterCount">—</span></button></div>
+<section id="placeDetail" class="place-detail" aria-label="選取的地點" hidden><div class="detail-top"><span id="detailKind"></span><button id="closeDetail" aria-label="關閉地點詳情">×</button></div><h2 id="detailName"></h2><p id="detailAddress"></p><p id="detailHours"></p><a id="explore3d" class="directions">在 3D 地圖試逛 ↗</a><a id="directions" class="directions" target="_blank" rel="noopener noreferrer">開啟步行導航 ↗</a><div class="detail-sources"><a id="officialSource" target="_blank" rel="noopener noreferrer"></a><a id="coordinateSource" target="_blank" rel="noopener noreferrer">位置來源 ↗</a></div></section>
+<div class="list-heading"><h2>採買地點</h2><span id="visibleCount" role="status" aria-live="polite"></span></div>
+<div id="placesList"></div><p id="emptyState" class="empty-state" hidden>沒有符合的地點。換個關鍵字，或切換到「全部」試試。</p>
+<footer class="data-note"><b>從真實地點開始</b><p id="coverage"></p><p>地址、座標與營業時間依來源記載，未串接即時營業、庫存或店內價格。</p><span id="checkedDate"></span><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">回報底圖問題 ↗</a></footer>
+</aside>
+</main>
+<noscript><p class="noscript">請啟用 JavaScript，才能查看地圖與採買地點。</p></noscript>
+<script src="vendor/leaflet.js"></script><script src="yonghe-places.js"></script><script src="yonghe-map.js"></script>
+</body>
+</html>

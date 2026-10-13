@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),T=require('./vendor/three.min.js');
+const drawing={fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fillText(){},arc(){},fill(){}};
+const context={window:{},document:{createElement:()=>({width:0,height:0,getContext:()=>drawing})},Math};vm.createContext(context);
+vm.runInContext(fs.readFileSync(__dirname+'/market-street.js','utf8'),context);
+const scene=new T.Scene(),world=context.window.createMarketStreetWorld(T,scene,()=>new T.Mesh(new T.PlaneGeometry(),new T.MeshBasicMaterial()));
+assert.equal(world.blocked(world.spawn.x,world.spawn.z),false,'spawn must be accessible');
+for(let z=-45;z<=12;z+=.5)assert.equal(world.blocked(0,z),false,'central walking route must stay clear');
+assert.equal(world.blocked(10,-10),true,'shops must stop player walking through walls');
+assert.equal(world.blocked(3.7,-8),true,'produce stands must have collision');
+assert.equal(world.blocked(-2,-8),false,'pedestrians must not block the walking route');
+assert.equal(world.venues[0].x,0);assert.ok(world.bounds.minZ<world.venues[0].z);
+world.update(.1);world.update(100);scene.traverse(o=>{assert.ok(Number.isFinite(o.position.x)&&Number.isFinite(o.position.z),'animation positions must stay finite')});
+console.log('Market street: walkable route, shop and stall collisions, animation bounds PASS');

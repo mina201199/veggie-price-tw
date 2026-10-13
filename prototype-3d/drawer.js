@@ -47,7 +47,7 @@
   });
   search.addEventListener('focus', () => { if (state !== 'full') set('full'); });
   new ResizeObserver(() => apply(offset(state))).observe(el);
-  set('peek');
+  set('half');
 
   window.Drawer = { set, get: () => state };
 })();

@@ -1,0 +1,123 @@
+window.YonghePlaces = {
+  "city": "新北市",
+  "venues": [
+    {
+      "hours": "06:00–14:00；每週一休市",
+      "name": "溪洲公有零售市場",
+      "id": "market-xizhou",
+      "address": "新北市永和區勵行街42-1號",
+      "lat": 25.0134505,
+      "lng": 121.5165574,
+      "sourceUrl": "https://www.newtaipeimarket.ntpc.gov.tw/tc/mapDetail.aspx?chk=e7b3c34b-7dac-4d31-b4ef-e4888265433f&id=38&mid=26&param=pn%3D1%26cid%3D31%26mid%3D26%26id%3D60",
+      "kind": "market",
+      "sourceName": "新北市政府市場處",
+      "coordinateSource": "https://www.openstreetmap.org/way/1300253597"
+    },
+    {
+      "hours": "06:00–14:00；每週一休市",
+      "name": "永安公有零售市場",
+      "id": "market-yongan",
+      "address": "新北市永和區安樂路431號",
+      "lat": 25.0046225,
+      "lng": 121.514108,
+      "sourceUrl": "https://www.newtaipeimarket.ntpc.gov.tw/tc/mapDetail.aspx?chk=a95e9e76-3f4b-4e68-b15d-70ea968d0aa8&id=36&mid=26&param=pn%3D1%26cid%3D31%26mid%3D26%26id%3D60",
+      "kind": "market",
+      "sourceName": "新北市政府市場處",
+      "coordinateSource": "https://www.openstreetmap.org/way/1246137722"
+    },
+    {
+      "hours": "07:30–22:30",
+      "name": "全聯永和永安",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-031200",
+      "address": "新北市永和區中正路742號",
+      "lat": 25.010384,
+      "lng": 121.515333,
+      "phone": "02-86602181",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "07:30–22:30",
+      "name": "全聯永和福和",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-039100",
+      "address": "新北市永和區福和路353號",
+      "lat": 25.007274,
+      "lng": 121.514689,
+      "phone": "02-29250662",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "07:30–22:30",
+      "name": "全聯永和永福",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-300100",
+      "address": "新北市永和區福和路67.69號",
+      "lat": 25.007724,
+      "lng": 121.522709,
+      "phone": "02-29272068",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "07:30–22:30",
+      "name": "全聯永和竹林",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-300400",
+      "address": "新北市永和區竹林路73-1號",
+      "lat": 25.013139,
+      "lng": 121.518955,
+      "phone": "02-89250736",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "08:00–23:00",
+      "name": "全聯永和中山",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-311200",
+      "address": "新北市永和區中山路一段177號1、2樓",
+      "lat": 25.008937,
+      "lng": 121.509457,
+      "phone": "02-22313787",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "08:00–23:00",
+      "name": "全聯永和永平",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-311500",
+      "address": "新北市永和區永平路26號1樓",
+      "lat": 25.009004,
+      "lng": 121.513326,
+      "phone": "02-22312566",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    },
+    {
+      "hours": "07:30–22:30",
+      "name": "全聯永和警光",
+      "coordinateSource": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart",
+      "id": "pxmart-751900",
+      "address": "新北市永和區竹林路182號",
+      "lat": 25.009762,
+      "lng": 121.520465,
+      "phone": "02-22310306",
+      "kind": "supermarket",
+      "sourceName": "全聯官方門市",
+      "sourceUrl": "https://www.pxmart.com.tw/mega/store-locations/store-list/pxmart"
+    }
+  ],
+  "district": "永和區",
+  "coverage": "首批收錄公有市場與全聯門市；尚未涵蓋其他超市與民有市場。",
+  "checkedDate": "2026-10-08"
+};

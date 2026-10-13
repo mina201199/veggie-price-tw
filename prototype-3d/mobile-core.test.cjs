@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict'),C=require('./mobile-core.js');
+const input={venue:'市場',product:'雞蛋',date:'2026-10-08',price:'45.50',quantity:'6',unit:'顆',stock:true};
+assert.equal(C.purchase(input).price,'45.50');
+assert.equal(C.purchase(input).quantity,'6');
+assert.equal(C.purchase(input).inventory,undefined,'採買不建立庫存');
+assert.equal(C.purchase({...input,quantity:'',unit:'g'}).quantity,null);
+for(const price of ['0','-1','NaN','Infinity','1.001'])assert.throws(()=>C.purchase({...input,price}));
+assert.throws(()=>C.purchase({...input,date:'2026-02-30'}));
+assert.equal(C.money('45.5'),'45.50');
+assert.equal(C.validDate('2026-02-30'),false);
+assert.equal(C.validDate('2026-10-08'),true);
+const gate=C.createSessionGate();
+const oldRequest=gate.capture();
+assert.equal(gate.isCurrent(oldRequest),true);
+gate.advance();
+assert.equal(gate.isCurrent(oldRequest),false,'登出或換帳號後，舊請求不能更新私人畫面');
+const nextRequest=gate.capture();
+assert.equal(gate.isCurrent(nextRequest),true);
+
+console.log('PASS: 手機採買金額、選填數量、日期、帳號切換請求隔離');

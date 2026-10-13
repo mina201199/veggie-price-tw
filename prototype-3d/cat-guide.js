@@ -568,7 +568,7 @@
   $('detail').addEventListener('close', () => {
     const x = opened, s = x && stalls.find(st => st.item && st.item.name === x.name);
     opened = null;
-    if (s) { Drawer.set('peek'); goToStall(s, x); }
+      if (s) { if(!window.PriceShopping)Drawer.set('peek'); goToStall(s, x); }
   });
   card.addEventListener('click', () => { if (cardStall && cardStall.item) List.openDetail(cardStall.item); });
 

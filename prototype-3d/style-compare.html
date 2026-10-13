@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>人物畫風比較</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* Three side-by-side stages showing the same figure in each render style; dragging any of them turns all three. */
+:root {
+  --bg: #FBF3F1; --surface: #FFFFFF; --ink: #4A3537; --ink-2: #8A7375; --line: #EDDCDC;
+  --stage: #F2D7DE; --accent: #D9667A; --accent-ink: #FFFFFF;
+  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #1E1819; --surface: #2A2224; --ink: #F5E9EA; --ink-2: #C3AEB0; --line: #3D3134; --accent: #F08A9C; --accent-ink: #2A1418; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #1E1819; --surface: #2A2224; --ink: #F5E9EA; --ink-2: #C3AEB0; --line: #3D3134; --accent: #F08A9C; --accent-ink: #2A1418; color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 var(--font); }
+button, select { font: inherit; color: inherit; }
+.wrap { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: .04em; }
+header p { margin: 2px 0 0; color: var(--ink-2); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+select, .seg { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; }
+select { padding: 7px 12px; }
+.seg { display: flex; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; border-radius: 999px; padding: 5px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.panel { display: grid; gap: 8px; }
+.panel h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.panel p { margin: 0; color: var(--ink-2); font-size: 13px; min-height: 2.6em; }
+.stage { position: relative; aspect-ratio: 4 / 5; border-radius: 22px; overflow: hidden; background: var(--stage); box-shadow: 0 0 0 1px var(--line); }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+@media (max-width: 640px) { .wrap { padding: 12px 16px; } h1 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>人物畫風比較</h1>
+      <p>同一個角色並排比較。拖曳任一格，三格會一起轉。</p>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="比較組">
+        <button data-set="look" aria-pressed="false">三種畫風</button>
+        <button data-set="cat" aria-pressed="true">貓咪感</button>
+      </div>
+      <select id="who" aria-label="角色"></select>
+      <div class="seg" role="group" aria-label="視角">
+        <button data-mode="full" aria-pressed="true">全身</button>
+        <button data-mode="head" aria-pressed="false">臉部特寫</button>
+      </div>
+    </div>
+  </header>
+  <div class="panels" id="panels"></div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="figure-kit.js"></script>
+<script src="figure-cast.js"></script>
+<script src="figure-look.js"></script>
+<script>
+(function () {
+  'use strict';
+  const T = THREE, FK = FigureKit, FL = FigureLook, $ = id => document.getElementById(id);
+  // Each comparison set is three panels: a render look, plus the cat-like options (rounder body, fluff).
+  const SETS = {
+    look: [
+      { look: 'figurine', name: '現在：塑膠公仔', note: '寫實材質、柔和陰影，像一尊上了亮光漆的公仔。' },
+      { look: 'toon', name: '卡通描邊', note: '兩階明暗加深色描線，像手遊或動畫的角色。' },
+      { look: 'clay', name: '黏土感', note: '霧面、表面有細小手捏凹痕，縫隙會積出陰影。' }
+    ],
+    cat: [
+      { look: 'toon', name: '卡通（上一版）', note: '目前的身材，表面光滑。' },
+      { look: 'toon', chibi: true, name: '卡通＋圓滾滾', note: '頭更大、腿更短、身體更圓。' },
+      { look: 'toon', chibi: true, fluff: true, name: '卡通＋圓滾滾＋毛茸茸', note: '頭髮換成貓咪那種蓬鬆毛，帽子底下的頭髮不長毛。' }
+    ]
+  };
+  const CHIBI = { head: 1.26, legs: .74, girth: 1.18, belly: .3, arm: 1.16, leg: 1.16, hand: 1.12, shoulders: .94 };
+  const BASE_H = .1, stageColor = '#F2D7DE', floorColor = '#EBCBD3';
+  const view = { id: 'grandma', yaw: .5, pol: .12, mode: 'full', set: 'cat' };
+  const baseGeo = new T.LatheGeometry([[0, 0], [.74, 0], [.775, .012], [.79, .045], [.78, .08], [.75, .097], [.7, .1], [0, .1]].map(([x, y]) => new T.Vector2(x, y)), 72);
+
+  function lights(scene, style, renderer) {
+    // The figurine rig is the gallery's own studio (figures.js); toon wants one clear key light, clay a softer, warmer one.
+    const rig = {
+      figurine: { hemi: 1.3, key: 2.1, fill: .75, rim: 1.5, env: .55, radius: 5 },
+      toon: { hemi: 1.4, key: 2.8, fill: 0, rim: .5, env: 0, radius: 3 },
+      clay: { hemi: 1.15, key: 2.0, fill: .55, rim: .7, env: .38, radius: 9 }
+    }[style];
+    scene.add(new T.HemisphereLight(0xfff6f2, 0xd8b6bf, rig.hemi));
+    const key = new T.DirectionalLight(0xfff3e8, rig.key);
+    key.position.set(-3.5, 7, 6);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1536, 1536);
+    Object.assign(key.shadow.camera, { left: -3, right: 3, top: 4, bottom: -1, near: 1, far: 25 });
+    key.shadow.bias = -.0004;
+    key.shadow.radius = rig.radius;
+    const fill = new T.DirectionalLight(0xffe6ee, rig.fill);
+    fill.position.set(5, 3, 4);
+    const rim = new T.DirectionalLight(0xffffff, rig.rim);
+    rim.position.set(1.5, 5, -6);
+    scene.add(key, fill, rim);
+    if (rig.env) {
+      const env = new T.Scene(), dome = new T.SphereGeometry(10, 32, 16), col = [], p = dome.attributes.position;
+      for (let i = 0; i < p.count; i++) { const k = (p.getY(i) / 10 + 1) / 2; col.push(.6 + .4 * k, .52 + .4 * k, .55 + .4 * k); }
+      dome.setAttribute('color', new T.Float32BufferAttribute(col, 3));
+      env.add(new T.Mesh(dome, new T.MeshBasicMaterial({ vertexColors: true, side: T.BackSide })));
+      for (const [x, y, z] of [[-5, 5, 4], [5, 3, -4]]) { const panel = new T.Mesh(new T.PlaneGeometry(4, 3), new T.MeshBasicMaterial({ color: 0xffffff })); panel.position.set(x, y, z); panel.lookAt(0, 0, 0); env.add(panel); }
+      const pm = new T.PMREMGenerator(renderer);
+      scene.environment = pm.fromScene(env, .04).texture;
+      scene.environmentIntensity = rig.env;
+      pm.dispose();
+    }
+  }
+
+  function makePanel(s) {
+    const el = document.createElement('section');
+    el.className = 'panel';
+    el.innerHTML = `<div class="stage"></div><h2>${s.name}</h2><p>${s.note}</p>`;
+    const look = s.look;
+    $('panels').appendChild(el);
+    const stage = el.querySelector('.stage');
+    const renderer = new T.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = T.SRGBColorSpace;
+    renderer.toneMapping = look === 'toon' ? T.NoToneMapping : T.ACESFilmicToneMapping;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFSoftShadowMap;
+    stage.appendChild(renderer.domElement);
+    const scene = new T.Scene(), camera = new T.PerspectiveCamera(28, 1, .1, 80);
+    scene.background = new T.Color(stageColor);
+    scene.fog = new T.Fog(scene.background, 14, 34);
+    lights(scene, look, renderer);
+    const floor = new T.Mesh(new T.CircleGeometry(40, 64), new T.MeshStandardMaterial({ roughness: 1, color: floorColor }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    const P = { style: look, cfg: s, el, stage, renderer, scene, camera, post: FL.post(T, renderer), fig: null, holder: null, look: null };
+    hookDrag(renderer.domElement);
+    return P;
+  }
+
+  function setFigure(P, id) {
+    if (P.holder) { P.scene.remove(P.holder); if (P.fur) P.fur.dispose(); P.look.dispose(); P.fig.dispose(); }
+    const f = FK.create(T, id, { castShadow: true, build: P.cfg.chibi ? CHIBI : null });
+    f.root.traverse(o => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; });
+    const holder = new T.Group(), base = new T.Mesh(baseGeo, new T.MeshStandardMaterial({ color: '#fbf8f5', roughness: .32 }));
+    base.receiveShadow = base.castShadow = true;
+    holder.add(base);
+    f.root.position.y = BASE_H;
+    holder.add(f.root);
+    P.scene.add(holder);
+    let face = null;
+    f.root.traverse(o => { if (o.isMesh && o.renderOrder === 2) face = o; });
+    Object.assign(P, { fig: f, holder, h: f.height() + BASE_H, headObj: face && face.parent, look: FL.restyle(T, holder, P.style) });
+    P.fur = P.cfg.fluff ? FL.fluff(T, holder, { head: f.head }) : null;
+  }
+
+  function place(P) {
+    const c = P.camera, tan = Math.tan(T.MathUtils.degToRad(c.fov / 2)), h = P.h;
+    let target, dist;
+    if (view.mode === 'head' && P.headObj) {
+      P.holder.updateMatrixWorld(true);
+      // Frame by the head's own size, so bigger chibi heads are not cropped.
+      const s = P.headObj.getWorldScale(new T.Vector3()).x / 1.16;
+      target = P.headObj.getWorldPosition(new T.Vector3()).add(new T.Vector3(0, .02 * s, 0));
+      dist = Math.max(.74 / tan, .62 / (tan * c.aspect)) * s;
+    }
+    else { target = new T.Vector3(0, h * .5, 0); dist = Math.max((h * .6) / tan, 1.0 / (tan * c.aspect)) * 1.06; }
+    c.position.set(target.x, target.y + Math.sin(view.pol) * dist, target.z + Math.cos(view.pol) * dist);
+    c.lookAt(target);
+  }
+
+  function draw(P, dt) {
+    P.holder.rotation.y = view.yaw;
+    P.fig.update(dt || 0);
+    place(P);
+    P.look.sync();
+    P.post.render(P.scene, P.camera, P.style);
+  }
+
+  function fit(P, w, h, ratio) {
+    if (ratio) P.renderer.setPixelRatio(ratio);
+    P.renderer.setSize(w, h, false);
+    P.camera.aspect = w / h;
+    P.camera.updateProjectionMatrix();
+  }
+
+  let panels = [];
+  const ro = new ResizeObserver(() => panels.forEach(P => fit(P, P.stage.clientWidth, P.stage.clientHeight)));
+  function useSet(name) {
+    for (const P of panels) { ro.unobserve(P.stage); P.post.dispose(); P.renderer.dispose(); P.renderer.forceContextLoss(); P.el.remove(); }
+    view.set = name;
+    panels = SETS[name].map(makePanel);
+    panels.forEach(P => { ro.observe(P.stage); setFigure(P, view.id); });
+    document.querySelectorAll('[data-set]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.set === name)));
+  }
+  document.querySelectorAll('[data-set]').forEach(b => b.onclick = () => useSet(b.dataset.set));
+
+  const sel = $('who');
+  Object.keys(FK.cast).forEach(id => { const o = document.createElement('option'); o.value = id; o.textContent = FK.cast[id].name; sel.appendChild(o); });
+  sel.value = view.id;
+  sel.onchange = () => { view.id = sel.value; panels.forEach(P => setFigure(P, view.id)); };
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+    view.mode = b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+
+  function hookDrag(cv) {
+    let last = null;
+    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); last = { x: e.clientX, y: e.clientY }; });
+    cv.addEventListener('pointermove', e => {
+      if (!last) return;
+      view.yaw += (e.clientX - last.x) * .012;
+      view.pol = Math.min(.7, Math.max(-.05, view.pol + (e.clientY - last.y) * .004));
+      last = { x: e.clientX, y: e.clientY };
+    });
+    const end = () => { last = null; };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+  }
+
+  useSet(/[?&]set=look/.test(location.search) ? 'look' : 'cat');
+  const clock = new T.Clock();
+  (function loop() {
+    const dt = Math.min(clock.getDelta(), .05);
+    panels.forEach(P => draw(P, dt));
+    requestAnimationFrame(loop);
+  })();
+
+  // Local inspection only: style-compare.html?debug exposes a capture that renders every style at a fixed size into one sheet.
+  if (/[?&]debug\b/.test(location.search)) {
+    window.cmp = {
+      get panels() { return panels; }, view, draw, setFigure, useSet,
+      capture(o) {
+        o = Object.assign({ w: 560, h: 700, head: 64, gap: 16, rows: ['full', 'head'] }, o);
+        const sheet = document.createElement('canvas'), n = panels.length;
+        sheet.width = n * o.w + (n + 1) * o.gap;
+        sheet.height = o.head + o.rows.length * (o.h + o.gap) + o.gap;
+        const g = sheet.getContext('2d');
+        g.fillStyle = '#FBF3F1'; g.fillRect(0, 0, sheet.width, sheet.height);
+        g.fillStyle = '#4A3537'; g.font = '700 28px "Noto Sans TC", "Microsoft JhengHei", sans-serif'; g.textBaseline = 'middle';
+        const keep = view.mode;
+        panels.forEach((P, i) => g.fillText(P.cfg.name, o.gap + i * (o.w + o.gap) + 8, o.gap + o.head / 2));
+        o.rows.forEach((mode, r) => {
+          view.mode = mode;
+          panels.forEach((P, i) => {
+            fit(P, o.w, o.h, 2);
+            draw(P, 0);
+            g.drawImage(P.renderer.domElement, o.gap + i * (o.w + o.gap), o.gap + o.head + r * (o.h + o.gap), o.w, o.h);
+          });
+        });
+        view.mode = keep;
+        panels.forEach(P => fit(P, P.stage.clientWidth, P.stage.clientHeight, Math.min(devicePixelRatio || 1, 2)));
+        return sheet.toDataURL('image/png');
+      },
+      // Every character in one panel's look, as a grid with names: cmp.roster(2, { ids: [...], mode: 'full' | 'head' }).
+      roster(panel, o) {
+        o = Object.assign({ w: 340, h: 425, cols: 6, gap: 14, label: 40, ids: Object.keys(FK.cast), mode: 'full' }, o);
+        const P = panels[panel], rows = Math.ceil(o.ids.length / o.cols);
+        const sheet = document.createElement('canvas');
+        sheet.width = o.cols * o.w + (o.cols + 1) * o.gap;
+        sheet.height = rows * (o.h + o.label + o.gap) + o.gap;
+        const g = sheet.getContext('2d');
+        g.fillStyle = '#FBF3F1'; g.fillRect(0, 0, sheet.width, sheet.height);
+        g.fillStyle = '#4A3537'; g.font = '700 22px "Noto Sans TC", "Microsoft JhengHei", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        const keep = { mode: view.mode, id: view.id };
+        view.mode = o.mode;
+        o.ids.forEach((id, n) => {
+          const x = o.gap + (n % o.cols) * (o.w + o.gap), y = o.gap + Math.floor(n / o.cols) * (o.h + o.label + o.gap);
+          setFigure(P, id);
+          fit(P, o.w, o.h, 2);
+          draw(P, 0);
+          g.drawImage(P.renderer.domElement, x, y, o.w, o.h);
+          g.fillText(FK.cast[id].name, x + o.w / 2, y + o.h + o.label / 2 + 2);
+        });
+        view.mode = keep.mode;
+        setFigure(P, keep.id);
+        fit(P, P.stage.clientWidth, P.stage.clientHeight, Math.min(devicePixelRatio || 1, 2));
+        return sheet.toDataURL('image/png');
+      }
+    };
+  }
+})();
+</script>
+</body>
+</html>

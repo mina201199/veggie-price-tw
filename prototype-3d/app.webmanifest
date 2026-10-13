@@ -1,0 +1,1 @@
+{"id":"/app/","name":"菜市記・採買記帳","short_name":"菜市記","lang":"zh-Hant","start_url":"/app/","scope":"/app/","display":"standalone","background_color":"#f6f4eb","theme_color":"#244f42","icons":[{"src":"app-icon.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"app-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}

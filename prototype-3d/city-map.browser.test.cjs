@@ -1,0 +1,50 @@
+const assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const base=process.env.GPS_TEST_URL||'http://localhost:8879/app';
+(async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{
+ const context=await browser.newContext({viewport:{width:390,height:844},permissions:['geolocation'],geolocation:{latitude:24.9537,longitude:121.225,accuracy:5}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base+'/app.html?view=map');
+ assert.equal(await page.locator('.tabs button').count(),3);assert.equal(await page.locator('.tabs button[data-view=map]').count(),0,'map must be the same city as character exploration');
+ const world=page.frameLocator('iframe[data-view=world]');await world.locator('#cityVenueSelect option[value]').first().waitFor({state:'attached'});
+ await page.waitForFunction(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city()?.venues.length>0);
+ assert.ok(await page.evaluate(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city().root.getObjectByName('city-buildings').geometry.getAttribute('position').count)>0);
+ assert.ok(await page.evaluate(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city().root.getObjectByName('city-roads').geometry.getAttribute('position').count)>0);
+ await world.locator('#overview').click();assert.equal(await world.locator('#overview').getAttribute('aria-pressed'),'true');await world.locator('#overview').click();
+ for(const kind of ['market','supermarket']){
+  const id=await page.evaluate(kind=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city().venues.find(v=>v.kind===kind)?.id,kind);assert.ok(id,kind+' source fixture missing');
+  await world.locator('#nearbyShops summary').click();
+  await world.locator('#cityVenueSelect').selectOption(id);await world.locator('#previewVenue').click();
+  await page.waitForTimeout(500);await page.screenshot({path:__dirname+'/../private/city-'+kind+'-exterior-mobile.png'});
+  assert.ok(await page.evaluate(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city().root.userData.detailedFacades)>0,'nearby streets retain authored facade details');
+  await world.locator('#enterVenue:enabled').click();
+  await world.locator('#shopInterior').waitFor();assert.ok(await world.locator('#shopCategories button').count()>=4);
+  await page.screenshot({path:__dirname+'/../private/city-'+kind+'-mobile.png'});
+  await world.locator('#shopCategories button').first().click();await world.locator('#shopNoteForm').waitFor();
+  await world.locator('#shopCollect').click();assert.equal(await world.locator('#shopCollect').isDisabled(),true);
+  await world.locator('#shopPrices button[data-product]').first().waitFor();
+  await world.locator('#shopNoteForm [name=product]').fill('戶外測試高麗菜');await world.locator('#shopNoteForm [name=price]').fill('45');await world.locator('#shopNoteForm button[type=submit]').click();await world.locator('#shopSaveStatus').filter({hasText:'已儲存'}).waitFor();
+  await world.locator('#shopLeave').click();await world.locator('#shopInterior').waitFor({state:'hidden'});
+ }
+ const records=await page.evaluate(()=>JSON.parse(localStorage.getItem('veggie-shopping-notes-v1')).records);assert.equal(records.length,2);assert.ok(records.every(r=>r.versions[0].price===45));
+ await page.locator('button[data-view=notes]').click();const notebook=page.frameLocator('iframe[data-view=notes]');await notebook.locator('#noteList .note-card').first().waitFor();assert.equal(await notebook.locator('#noteList .note-card').count(),2);await page.locator('button[data-view=world]').click();
+ await world.locator('#gpsToggle').click();await page.waitForFunction(()=>MarketApp.context().gps.status==='following');
+ // Moving outdoors while a room is open must preserve the newest accepted fix on exit.
+ const nearShop=await page.evaluate(()=>{const w=document.querySelector('iframe[data-view=world]').contentWindow,c=w.GPSWorld.city(),v=c.venues.filter(v=>v.kind==='supermarket').sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z))[0];return {id:v.id,...w.MarketGPS.unproject(v.entrance,c.origin)}});
+ await context.setGeolocation({latitude:nearShop.lat,longitude:nearShop.lng,accuracy:5});
+ await page.waitForFunction(lat=>Math.abs(MarketApp.context().player.lat-lat)<1e-7,nearShop.lat);
+ await world.locator('#nearbyShops summary').click();await world.locator('#cityVenueSelect').selectOption(nearShop.id);await world.locator('#nearbyShops summary').click();
+ await world.locator('#enterVenue:enabled').click();await world.locator('#shopInterior').waitFor();
+ const movedLat=nearShop.lat+.0003;await context.setGeolocation({latitude:movedLat,longitude:nearShop.lng,accuracy:5});await page.waitForFunction(lat=>Math.abs(MarketApp.context().player.lat-lat)<1e-7,movedLat);
+ await world.locator('#shopLeave').click();await page.waitForTimeout(1100);
+ const restored=await page.evaluate(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.position());assert.ok(Math.abs(restored.lat-movedLat)<.000003,'exit must not animate back to the pre-entry GPS fix');
+ await world.locator('#gpsToggle').click();await world.locator('#nearbyShops summary').click();await world.locator('#cityVenueSelect').selectOption(nearShop.id);await world.locator('#previewVenue').click();await world.locator('#enterVenue:enabled').click();
+ await page.locator('#market').selectOption('dayuan');await world.locator('#shopInterior').waitFor({state:'hidden',timeout:5000});
+ await page.waitForFunction(()=>{const w=document.querySelector('iframe[data-view=world]').contentWindow,p=w.GPSWorld.position();return w.GPSWorld.city()&&Math.abs(p.lat-25.063)<.0002});
+ await world.locator('#gpsToggle').click();await context.setGeolocation({latitude:nearShop.lat,longitude:nearShop.lng,accuracy:5});await page.waitForFunction(()=>MarketApp.context().gps.status==='following');
+ await context.setGeolocation({latitude:25.063,longitude:121.197,accuracy:5});await world.locator('#coordinate').filter({hasText:'25.063000'}).waitFor();
+ await page.waitForFunction(()=>{const w=document.querySelector('iframe[data-view=world]').contentWindow,p=w.GPSWorld.position();return Math.abs(p.lat-25.063)<.000003&&w.GPSWorld.city()?.venues.length>0});
+ await world.locator('#overview').click();await page.locator('button[data-view=prices]').click();await page.locator('button[data-view=world]').click();assert.equal(await page.evaluate(()=>MarketApp.context().player.mode),'gps');
+ await world.locator('#overview').click();await page.screenshot({path:__dirname+'/../private/city-dayuan-follow.png'});
+ assert.equal(await world.locator('body').evaluate(b=>b.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);
+ await page.screenshot({path:__dirname+'/../private/city-gps-mobile.png'});console.log('PASS unified geographic 3D city, market & supermarket interiors, local purchases, GPS Dayuan/Zhongli, overview and shared-session preservation');await context.close();
+}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

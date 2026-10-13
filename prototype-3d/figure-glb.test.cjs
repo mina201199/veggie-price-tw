@@ -1,6 +1,19 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const T = require('./vendor/three.min.js');
 
+// 1. The GLB that blender/grandma_build.py exports has what figure-glb.js drives.
+const glb = fs.readFileSync(__dirname + '/models/grandma.glb');
+assert.equal(glb.toString('ascii', 0, 4), 'glTF', 'grandma.glb is a binary glTF');
+const json = JSON.parse(glb.toString('utf8', 20, 20 + glb.readUInt32LE(12)));
+const node = n => json.nodes.find(x => x.name === n), kids = n => (node(n).children || []).map(i => json.nodes[i].name);
+assert.deepEqual(json.scenes[0].nodes.map(i => json.nodes[i].name), ['grandma'], 'one root node');
+for (const n of ['head_pivot', 'hip_L', 'hip_R', 'shoulder_L', 'shoulder_R', 'trolley']) assert.ok(kids('grandma').includes(n), `grandma -> ${n}`);
+assert.ok(kids('hip_L').includes('Leg.L') && kids('hip_L').includes('Shoe.L'), 'left leg and shoe hang off hip_L');
+assert.ok(kids('head_pivot').includes('Hair') && kids('head_pivot').includes('Hat'), 'hair and hat ride on the head');
+assert.equal(node('Hair').extras.hair, true, 'hair is tagged for FigureLook.fluff');
+assert.ok(json.images.length >= 3 && json.images.every(im => im.bufferView !== undefined), 'textures are embedded');
+console.log(`grandma.glb: ${(glb.length / 1e6).toFixed(2)} MB, ${json.nodes.length} nodes, ${json.images.length} images`);
+
 // 2. The adapter, with a stand-in loader: a scene shaped like the export (pivots by name), or a failure.
 function sceneLike() {
   const box = (w, h, d, y) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d)); m.position.y = y; return m; };

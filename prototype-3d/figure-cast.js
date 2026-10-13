@@ -19,6 +19,7 @@
         cap: k.track(new k.T.MeshStandardMaterial({ vertexColors: true, roughness: .62, map: streak })),
         strand: k.track(new k.T.MeshStandardMaterial({ vertexColors: true, roughness: .55, side: k.T.DoubleSide }))
       };
+      k._hair.cap.userData.hair = k._hair.strand.userData.hair = true;  // FigureLook.fluff turns hair into long fluff
     }
     return k._hair;
   }
@@ -67,7 +68,7 @@
     const geo = new T.SphereGeometry(1, 9, 6), p = geo.attributes.position, v = new T.Vector3();
     for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); v.multiplyScalar(1 + .13 * Math.sin(v.x * 7) * Math.sin(v.y * 7 + 1) * Math.sin(v.z * 7 + 2)); p.setXYZ(i, v.x, v.y, v.z); }
     geo.computeVertexNormals();
-    const im = new T.InstancedMesh(geo, k.track(new T.MeshStandardMaterial({ roughness: .7 })), pts.length);
+    const im = new T.InstancedMesh(geo, k.track(new T.MeshStandardMaterial({ roughness: .7, userData: { hair: true } })), pts.length);
     const M = new T.Matrix4(), Q = new T.Quaternion(), E = new T.Euler(), Sc = new T.Vector3(), c = new T.Color();
     pts.forEach((q, n) => {
       const rr = o.r[0] + (o.r[1] - o.r[0]) * k.rand(q.i + 3), lift = o.lift[0] + (o.lift[1] - o.lift[0]) * k.rand(q.i + 5);
@@ -97,6 +98,8 @@
   const shortEdge = (front, temple, ear, nape) => byAngle([[0, front], [.75, front + .1], [1.05, temple], [1.57, ear], [2.3, nape], [Math.PI, nape + .05]]);
 
   // ---------- headwear ----------
+  // Shells that sit over the hair are tagged userData.headwear, so FigureLook.fluff keeps fur from poking through them.
+  const wear = o => { o.userData.headwear = true; return o; };
   // Bucket hat: a domed crown, a band and a brim all round. In head space; y/tilt lift and tip it back.
   function bucketHat(k, o) {
     const T = k.T, hat = k.G(k.head, 0, o.y || 0, o.z || 0);
@@ -104,10 +107,10 @@
     const m = k.cloth(o.color, { roughness: .95 }), rIn = o.r || .45, zs = .93;
     const crown = o.dome ? [[rIn, .1], [rIn * .98, .18], [rIn * .9, .27], [rIn * .74, .36], [rIn * .5, .42], [rIn * .25, .45], [0, .455]]
       : [[rIn, .1], [rIn + .006, .2], [rIn - .02, .32], [rIn - .08, .42], [rIn - .18, .49], [rIn - .32, .525], [0, .535]];
-    k.add(k.lathe(crown.map(([r, y]) => [Math.max(r, 0), y]), { seg: 48, zs }), m, hat);
+    wear(k.add(k.lathe(crown.map(([r, y]) => [Math.max(r, 0), y]), { seg: 48, zs }), m, hat));
     if (o.band) k.add(k.lathe([[rIn + .01, .1], [rIn + .014, .16]], { seg: 48, zs }), k.cloth(o.band), hat);
     const out = o.brim || .2, drop = o.drop === undefined ? .07 : o.drop;
-    k.add(k.lathe([[rIn + out, .1 - drop], [rIn + out * .55, .1 - drop * .4], [rIn, .1]], { seg: 48, zs }), m, hat);
+    wear(k.add(k.lathe([[rIn + out, .1 - drop], [rIn + out * .55, .1 - drop * .4], [rIn, .1]], { seg: 48, zs }), m, hat));
     k.add(k.lathe([[rIn + out, .1 - drop - .012], [rIn + out + .006, .1 - drop]], { seg: 48, zs }), m, hat);
     if (o.seams) {
       const sm = k.cloth(o.seams);
@@ -140,7 +143,7 @@
       }
       for (let i = 0; i < segV; i++) for (let j = 0; j < segU; j++) { const a = i * (segU + 1) + j, b = a + segU + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
       const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-      return k.add(g, m, k.head);
+      return wear(k.add(g, m, k.head));
     };
     make(.085, shellM); make(.05, dark);
     const rim = [];
@@ -169,8 +172,8 @@
     }
     for (let i = 0; i < segV; i++) for (let j = 0; j < segU; j++) { const a = i * (segU + 1) + j, b = a + segU + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-    k.add(g, m, k.head);
-    const kn = k.add(new T.SphereGeometry(.07, 16, 12), m, k.head, 0, -.02, -.43); kn.scale.set(1.1, .9, .8);
+    wear(k.add(g, m, k.head));
+    const kn = wear(k.add(new T.SphereGeometry(.07, 16, 12), m, k.head, 0, -.02, -.43)); kn.scale.set(1.1, .9, .8);
     for (const s of [-1, 1]) {
       k.add(k.strand([k.V(s * .02, -.02, -.45), k.V(s * .12, -.06, -.5), k.V(s * .2, -.03 - (o.tailDrop || 0), -.46)], { width: .055, thick: .012, segs: 12, taper: t => 1 - .5 * t, up: () => k.V(0, 0, -1) }), m, k.head);
       k.add(new T.SphereGeometry(.05, 12, 10), m, k.head, s * .06, .0, -.44).scale.set(1.3, .8, .6);

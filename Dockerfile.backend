@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements-backend.txt ./
+RUN pip install --no-cache-dir -r requirements-backend.txt && useradd --create-home --uid 10001 ledger
+COPY backend ./backend
+COPY prototype-3d/mobile-app.html prototype-3d/mobile-app.css prototype-3d/mobile-app.js prototype-3d/mobile-core.js prototype-3d/app.webmanifest prototype-3d/app-icon.svg ./prototype-3d/
+COPY prototype-3d/notes-store.js prototype-3d/photos.js prototype-3d/app-icon.png prototype-3d/app-icon-512.png prototype-3d/notebook.html prototype-3d/notebook.css prototype-3d/notebook-entry.css prototype-3d/notebook.js ./prototype-3d/
+COPY prototype-3d/prices-data.json ./prototype-3d/prices-data.json
+COPY prototype-3d/app.html prototype-3d/app-shell.js prototype-3d/app-session.js prototype-3d/market-bridge.js prototype-3d/xinyi-places.js prototype-3d/gps-core.js ./prototype-3d/
+COPY prototype-3d/gps-world.html prototype-3d/gps-world.js prototype-3d/gps-world.css prototype-3d/taiwan-map.html prototype-3d/taiwan-map.js prototype-3d/taiwan-counties.json ./prototype-3d/
+COPY prototype-3d/city-data.js prototype-3d/city-world.js prototype-3d/city-shopping.js prototype-3d/city-shopping.css prototype-3d/road-network.js ./prototype-3d/
+COPY prototype-3d/city-data/dayuan.json prototype-3d/city-data/zhongli.json ./prototype-3d/city-data/
+COPY prototype-3d/camera-controls.js prototype-3d/characters.js prototype-3d/characters.css prototype-3d/figure-kit.js prototype-3d/figure-cast.js prototype-3d/figure-glb.js prototype-3d/cat-kit.js prototype-3d/cats.js ./prototype-3d/
+COPY prototype-3d/market-directions.js ./prototype-3d/
+COPY prototype-3d/vendor/three.min.js prototype-3d/vendor/GLTFLoader.js prototype-3d/vendor/THREE-LICENSE.txt prototype-3d/vendor/leaflet.js prototype-3d/vendor/leaflet.css prototype-3d/vendor/LEAFLET-LICENSE.txt ./prototype-3d/vendor/
+COPY prototype-3d/bajiu/character.js prototype-3d/bajiu/glb-data.js ./prototype-3d/bajiu/
+COPY prototype-3d/dama-character/dama-character.glb ./prototype-3d/dama-character/
+COPY prototype-3d/market-character-studies/*.glb ./prototype-3d/market-character-studies/
+COPY prototype-3d/prices.html prototype-3d/prices-core.js prototype-3d/prices-ui.js prototype-3d/drawer.js prototype-3d/cat-guide.js prototype-3d/shopping-flow.js prototype-3d/shopping-flow.css prototype-3d/shopping-home.js ./prototype-3d/
+COPY deploy/entrypoint.py deploy/proxy_config.py ./deploy/
+COPY tools/fetch.py tools/fetch_retail.py tools/build_prices.py tools/build.py tools/catalog.py tools/markup.py ./tools/
+COPY data/raw/*.json ./data/raw/
+COPY data/retail_taipei.json ./data/retail_taipei.json
+RUN mkdir -p /app/private/backend && chown -R ledger:ledger /app/private
+USER ledger
+ENV BACKEND_DATA_DIR=/app/private/backend DJANGO_DEBUG=0
+EXPOSE 8878
+CMD ["python", "deploy/entrypoint.py"]

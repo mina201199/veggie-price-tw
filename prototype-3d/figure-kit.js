@@ -1,4 +1,4 @@
-/* FigureKit: chibi market-folk figurines built from code after the user's twelve turnaround sheets.
+/* FigureKit: chibi market-folk figurines built from code after the user's approved character sheets.
    Everyone shares one rig (about three heads tall) and a painted face; each character in figure-cast.js
    dresses itself through the builder `k` handed to its build(k):
 
@@ -310,6 +310,8 @@
     const BASE = { girth: 1.12, head: 1.16, arm: 1.22, leg: 1.16, hand: 1.15, legs: .94, shoulders: 1.04, hipW: 1.1 };
     const B = Object.assign({ belly: 0 }, BASE);
     for (const [key, v] of Object.entries(spec.build || {})) B[key] = key === 'belly' ? v : (BASE[key] || 1) * v;
+    // opts.build reshapes everyone the same way on top of their own build (e.g. a rounder chibi body); belly adds.
+    for (const [key, v] of Object.entries(opts.build || {})) B[key] = key === 'belly' ? B.belly + v : (B[key] || 1) * v;
     const mats = new Map(), textures = [];
 
     // ---------- materials ----------
@@ -340,9 +342,12 @@
         const o = Object.assign({ roughness: .8, side: T.DoubleSide }, extra);
         for (const key in o) if (o[key] === undefined) delete o[key];
         if (typeof c === 'string') o.color = new T.Color(c); else if (c && c.pattern) { o.map = pattern(c.pattern); o.color = new T.Color(c.tint || '#ffffff'); }
+        const fabric = !!(o.weave || (c && c.pattern));
         if (o.weave) { if (!o.map) o.map = pattern('weave'); delete o.weave; }
         const physical = o.sheen !== undefined || o.clearcoat !== undefined || o.transmission !== undefined;
-        mats.set(key, new (physical ? T.MeshPhysicalMaterial : T.MeshStandardMaterial)(o));
+        const m = new (physical ? T.MeshPhysicalMaterial : T.MeshStandardMaterial)(o);
+        if (fabric) m.userData.fabric = true;  // FigureLook.fluff gives fabrics a short fuzz
+        mats.set(key, m);
       }
       return mats.get(key);
     }
@@ -748,7 +753,7 @@
     update(0);
 
     return {
-      id, root, name: spec.name, spec,
+      id, root, head, name: spec.name, spec,
       height: () => { root.updateMatrixWorld(true); return new T.Box3().setFromObject(root).max.y; },
       update,
       dispose() {

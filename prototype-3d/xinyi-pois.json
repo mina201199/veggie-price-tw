@@ -1,0 +1,57 @@
+[
+  {
+    "id": 261197038,
+    "tags": {
+      "amenity": "marketplace",
+      "building": "retail",
+      "name": "南松市場"
+    },
+    "lat": 25.05069362307692,
+    "lng": 121.57067835384616
+  },
+  {
+    "id": 313565798,
+    "tags": {
+      "amenity": "marketplace",
+      "building": "retail",
+      "name": "松山市場",
+      "name:en": "Songshan market",
+      "name:ja": "松山市場",
+      "name:zh": "松山市場"
+    },
+    "lat": 25.050372657142855,
+    "lng": 121.57607107142857
+  },
+  {
+    "id": 430628146,
+    "tags": {
+      "amenity": "marketplace",
+      "building": "retail",
+      "level": "1",
+      "name": "光復市場"
+    },
+    "lat": 25.0362491,
+    "lng": 121.56052285454544
+  },
+  {
+    "id": 517754978,
+    "tags": {
+      "amenity": "marketplace",
+      "building": "retail",
+      "name": "永春市場"
+    },
+    "lat": 25.04303739642857,
+    "lng": 121.57737841785715
+  },
+  {
+    "id": 525276550,
+    "tags": {
+      "amenity": "marketplace",
+      "building": "retail",
+      "building:levels": "1",
+      "name": "永吉市場"
+    },
+    "lat": 25.044801163636365,
+    "lng": 121.57532897272726
+  }
+]
