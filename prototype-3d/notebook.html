@@ -4,16 +4,17 @@
 <body><main class="notebook">
  <header><a href="prices.html" class="back">← 回到這一趟採買</a><span class="privacy">🔒 私人筆記</span></header>
  <section class="intro"><small>菜市漫遊 / MY SHOPPING JOURNAL</small><h1>把好買的，<br>都記下來。</h1><p>哪家的肉好吃、上次買多少錢，<br>留給下一次採買的自己。</p><span class="intro-stamp" aria-hidden="true">買<br>菜<br>記</span></section>
- <div class="local-notice">僅存這台裝置的瀏覽器，沒有帳號同步。照片也只存在這裡，不會上傳。清除網站資料會遺失筆記與照片，請定期匯出備份。共用裝置上的其他人也可能看到。</div>
+ <div id="localNotice" class="local-notice">僅存這台裝置的瀏覽器，沒有帳號同步。照片也只存在這裡，不會上傳。清除網站資料會遺失筆記與照片，請定期匯出備份。共用裝置上的其他人也可能看到。</div>
+ <div id="syncStatus" role="status" aria-live="polite">正在連接筆記…</div><div class="toolbar"><button id="syncNotes" class="secondary" hidden>重新同步</button><button id="importLocalNotes" class="secondary" hidden>將本機筆記加入目前帳號</button></div>
  <div id="storageError" role="alert" hidden></div>
  <div class="toolbar"><button id="addNote" class="primary">＋ 記一筆採買</button><button id="addFromPhoto" class="primary photo-button">📷 拍收據／標價</button></div>
- <div class="toolbar backup-row"><button id="exportNotes" class="secondary">匯出備份</button><small>備份含筆記、所有版本與照片。</small></div>
+ <div class="toolbar backup-row"><button id="exportNotes" class="secondary">匯出備份</button><small>備份含筆記、所有版本、照片與待買清單。</small></div>
  <div class="import-row"><button id="importNotes" class="secondary">匯入備份</button><small>搬到新電腦？從 JSON 還原，保留既有筆記。</small></div><input id="backupFile" type="file" accept=".json,application/json" hidden>
  <section id="quickRepeat" hidden><h2 class="quick-title">最近買過 · 再買一次</h2><p class="field-hint">沿用商品資料，只需確認這次價格。</p><div id="repeatList" class="quick-list"></div></section>
  <label class="search">搜尋筆記<input id="searchNotes" type="search" placeholder="商品、品牌、分店或心得…"></label>
  <div class="list-heading"><h2>我的採買歷史</h2><span id="noteCount"></span></div>
  <div id="noteList"></div><div id="noteStatus" role="status" aria-live="polite"></div>
- <footer>可以附上收據或標價照片，對照照片手動輸入。自動辨識（AI）、雲端同步與公開實價審核尚未串接。</footer>
+ <footer>可以附上收據或標價照片，對照照片手動輸入。登入後可同步私人筆記；自動辨識（AI）與公開實價審核尚未串接。</footer>
 </main>
 <dialog id="noteEditor" aria-labelledby="editorTitle"><div class="dialog-head"><div><small>只屬於你的採買紀錄</small><h2 id="editorTitle">新增採買筆記</h2></div><button type="button" id="closeEditor" aria-label="關閉編輯">✕</button></div>
  <form id="noteForm">
@@ -46,9 +47,9 @@
  </form>
 </dialog>
 <dialog id="noteDetail" aria-labelledby="detailTitle"><div class="dialog-head"><h2 id="detailTitle">採買紀錄</h2><button id="closeDetail" aria-label="關閉紀錄">✕</button></div><div id="detailContent"></div></dialog>
-<dialog id="photoEntry" aria-labelledby="photoTitle"><div class="dialog-head"><div><small>收據或商品標價 · 照片只存在這台裝置</small><h2 id="photoTitle">從照片記帳</h2></div><button type="button" id="closePhoto" aria-label="關閉照片記帳">✕</button></div>
+<dialog id="photoEntry" aria-labelledby="photoTitle"><div class="dialog-head"><div><small>收據或商品標價 · 私人照片</small><h2 id="photoTitle">從照片記帳</h2></div><button type="button" id="closePhoto" aria-label="關閉照片記帳">✕</button></div>
  <form id="photoForm" novalidate>
-  <label class="photo-pick" id="photoPick"><input id="photoFile" type="file" accept="image/*"><span class="photo-pick-icon" aria-hidden="true">📷</span><b>拍照或選擇照片</b><small>手機會讓你選相機或相簿。照片會先縮小再存，不會上傳。</small></label>
+  <label class="photo-pick" id="photoPick"><input id="photoFile" type="file" accept="image/*"><span class="photo-pick-icon" aria-hidden="true">📷</span><b>拍照或選擇照片</b><small>手機會讓你選相機或相簿。照片會先縮小；帳號模式會與私人筆記一起同步。</small></label>
   <div id="photoPreview" hidden>
    <figure class="note-photo"><img id="photoImg" alt="這次的收據或標價照片"></figure>
    <div class="photo-tools"><div class="kind-toggle" role="group" aria-label="照片類型"><button type="button" data-kind="收據" aria-pressed="true">🧾 收據</button><button type="button" data-kind="標價" aria-pressed="false">🏷️ 標價</button><button type="button" data-kind="其他" aria-pressed="false">其他</button></div><button type="button" id="replacePhoto" class="secondary">換一張</button></div>
@@ -62,5 +63,5 @@
   <button type="submit" id="savePhotoNotes" class="primary save">儲存勾選的品項</button>
  </form>
 </dialog>
-<dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">確認匯入筆記</h2><p id="importSummary"></p><p class="field-hint">只存在這台裝置，不會上傳。會保留修改歷史，不刪除既有筆記。建議先匯出目前資料備份。</p><div class="detail-actions"><button id="cancelImport" class="secondary">取消</button><button id="confirmImport" class="primary">確認匯入</button></div></dialog>
-<script src="notes-store.js"></script><script src="shopping-flow.js"></script><script src="photos.js"></script><script src="notebook.js"></script></body></html>
+<dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">確認匯入筆記</h2><p id="importSummary"></p><p class="field-hint">帳號模式會加入目前登入帳號；本機模式只保存在這台裝置。會保留修改歷史，不刪除既有筆記。建議先匯出目前資料備份。</p><div class="detail-actions"><button id="cancelImport" class="secondary">取消</button><button id="confirmImport" class="primary">確認匯入</button></div></dialog>
+<script src="notes-store.js"></script><script src="shopping-flow.js"></script><script src="photos.js"></script><script src="cloud-notes.js"></script><script src="cloud-plan.js"></script><script src="notebook.js"></script></body></html>

@@ -1,10 +1,26 @@
-(()=>{
+(async()=>{
 'use strict';
-const N=window.ShoppingNotes,P=window.NotePhotos,$=id=>document.getElementById(id),form=$('noteForm'),editor=$('noteEditor'),detail=$('noteDetail');
-let records=[],editingId=null,dirty=false,flowProduct=null;
+const N=window.ShoppingNotes,$=id=>document.getElementById(id),form=$('noteForm'),editor=$('noteEditor'),detail=$('noteDetail');
+let records=[],editingId=null,editingSnapshot=null,dirty=false,flowProduct=null,savingNote=false;
 // Accessing storage can itself throw in restricted browsers; surface the error.
 const storage={getItem:k=>window.localStorage.getItem(k),setItem:(k,v)=>window.localStorage.setItem(k,v)};
-const store=N.createStore(storage);
+let store,P=window.NotePhotos;
+$('addNote').disabled=true;$('addFromPhoto').disabled=true;
+try{store=window.CloudNotes?await CloudNotes.createStore({storage,onStatus:message=>{$('syncStatus').textContent=(store?.user?'帳號：'+(store.user.name||store.user.email||'已登入')+' · ':'')+message}}):N.createStore(storage);P=store.photos||P;}
+catch(e){error($('storageError'),e.message);$('syncStatus').textContent='尚未同步，請登入或重新整理。';return;}
+const cloud=store.mode==='cloud';
+const flowScope=cloud?'account-'+store.user.id:'local';
+async function currentPlan(){return cloud?CloudPlan.create({user:store.user}):ShoppingFlow.createPlan(localStorage,flowScope);}
+async function removePurchased(product){await (await currentPlan()).remove(product);}
+$('syncStatus').textContent=cloud?`帳號：${store.user.name||store.user.email||'已登入'} · 已同步`:'本機模式：筆記與照片只存在這台裝置，請定期備份。';
+$('localNotice').hidden=cloud;$('importLocalNotes').hidden=!cloud;$('syncNotes').hidden=!cloud;
+$('addNote').disabled=false;$('addFromPhoto').disabled=false;
+if(cloud){
+ window.addEventListener('cloudnotes:changed',e=>{if(e.detail.store===store)refresh()});
+ CloudNotes.watch(store,e=>{$('syncStatus').textContent=e.message;});
+ $('syncNotes').onclick=async()=>{try{await store.sync();$('syncStatus').textContent='已同步最新筆記。'}catch(e){$('syncStatus').textContent=e.message}};
+ $('importLocalNotes').onclick=()=>{try{const text=N.createStore(storage).exportJSON(),result=store.importJSON(text,true);pendingBackup={text,photos:[]};$('importSummary').textContent=`將這台裝置的筆記加入目前帳號：新增 ${result.added} 筆、更新 ${result.updated} 筆；保留原本本機資料。`;$('importDialog').showModal();}catch(e){$('noteStatus').textContent=e.message}};
+}
 function today(){return ShoppingFlow.today();}
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function error(target,message){target.textContent=message;target.hidden=!message}
@@ -41,7 +57,7 @@ function render(){
 }
 function openEditor(record,repeat=false){
  flowProduct=null;
- editingId=record&&!repeat?record.id:null;form.reset();error($('formError'),'');
+ editingId=record&&!repeat?record.id:null;editingSnapshot=editingId?JSON.parse(JSON.stringify(record)):null;form.reset();error($('formError'),'');
  form.querySelectorAll('details').forEach(d=>d.open=false);
  if(record){const n=N.latest(record);for(const [key,val]of Object.entries(n)){const field=form.elements.namedItem(key);if(field){if(field.type==='checkbox')field.checked=val===true;else field.value=val??''}}}
  if(!record||repeat){form.elements.date.value=today();if(!record)form.elements.unit.value='g';form.elements.share.checked=false;}
@@ -53,7 +69,7 @@ function openEditor(record,repeat=false){
  $('editorTitle').textContent=editingId?'修正紀錄・保留舊版本':repeat?'再買一次・新增紀錄':'新增採買筆記';
  dirty=false;updatePreviews();editor.showModal();
 }
-function requestClose(){if(dirty&&!window.confirm('尚未儲存的內容會放棄，要關閉嗎？'))return;editor.close();dirty=false;}
+function requestClose(){if(savingNote)return;if(dirty&&!window.confirm('尚未儲存的內容會放棄，要關閉嗎？'))return;editor.close();dirty=false;}
 function updatePreviews(){
  const n=readInput();const price=Number(n.price),qty=Number(n.quantity);
  form.querySelectorAll('[data-experience]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.experience===n.experience)));
@@ -75,15 +91,15 @@ function showPhoto(fig,id,kind){
  const img=fig.querySelector('img'),cap=fig.querySelector('figcaption');fig.hidden=!id;if(!id)return;
  img.hidden=true;img.removeAttribute('src');cap.textContent='正在讀取照片…';
  P.url(id).then(u=>{if(!u){cap.textContent='這筆的照片不在這台裝置上（可能來自沒有附照片的備份）。';return}
-  img.src=u;img.alt=`${kind||'照片'}照片`;img.hidden=false;cap.textContent=`${kind||'照片'} · 只存在這台裝置`;
+  img.src=u;img.alt=`${kind||'照片'}照片`;img.hidden=false;cap.textContent=`${kind||'照片'} · ${cloud?'目前帳號私人照片':'只存在這台裝置'}`;
   img.onclick=()=>fig.classList.toggle('zoom');})
  .catch(e=>{cap.textContent=`照片讀取失敗：${e.message}`});
 }
 const photoDialog=$('photoEntry'),photoForm=$('photoForm'),rowsBox=$('itemRows');
-let photo=null,photoDirty=false;   // photo: { id, kind, fresh (prepared, not yet stored), url }
+let photo=null,photoDirty=false,savingPhotoNotes=false;   // photo: { id, kind, fresh (prepared, not yet stored), url }
 const UNITS=['g','kg','台斤','顆','包','盒','把'];
 function setKind(kind){if(!photo)return;photo.kind=kind;photoForm.querySelectorAll('[data-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kind===kind)))}
-function countRows(){const rows=[...rowsBox.children],on=rows.filter(r=>r.querySelector('.pick input').checked).length;$('itemCount').textContent=`${rows.length} 項`;$('savePhotoNotes').textContent=on?`儲存勾選的 ${on} 項`:'儲存勾選的品項';$('savePhotoNotes').disabled=!on}
+function countRows(){const rows=[...rowsBox.children],on=rows.filter(r=>r.querySelector('.pick input').checked).length;$('itemCount').textContent=`${rows.length} 項`;$('savePhotoNotes').textContent=on?`儲存勾選的 ${on} 項`:'儲存勾選的品項';$('savePhotoNotes').disabled=savingPhotoNotes||!on}
 function addRow(data){
  data=data||{};const row=el('div',undefined,'item-row'),n=rowsBox.children.length+1;
  const pick=el('label',undefined,'pick'),check=el('input');check.type='checkbox';check.checked=true;check.setAttribute('aria-label',`儲存第 ${n} 項`);pick.append(check);
@@ -120,6 +136,7 @@ async function takePhoto(file){
  }catch(e){error($('photoError'),e.message)}
 }
 function closePhotoEntry(){
+ if(savingPhotoNotes)return;
  if(photoDirty&&!window.confirm('照片與已填的品項都還沒儲存，要放棄嗎？'))return;
  if(photo&&photo.fresh&&photo.url)URL.revokeObjectURL(photo.url);photo=null;photoDirty=false;photoDialog.close();
 }
@@ -135,29 +152,29 @@ photoForm.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{setKind(b.da
 $('addItemRow').onclick=()=>{addRow().querySelector('[name=product]').focus();photoDirty=true};
 photoForm.addEventListener('input',()=>{photoDirty=true;countRows()});
 photoForm.onsubmit=async e=>{
- e.preventDefault();error($('photoError'),'');
+ e.preventDefault();if(savingPhotoNotes)return;error($('photoError'),'');
  if(!photo){error($('photoError'),'請先拍照或選擇一張照片。沒有照片的採買請用「＋ 記一筆採買」。');return}
  const rows=[...rowsBox.children].filter(r=>r.querySelector('.pick input').checked);
  const inputs=rows.map(r=>{const v=name=>r.querySelector(`[name=${name}]`).value;return {venue:photoForm.elements.venue.value,date:photoForm.elements.date.value,product:v('product'),price:v('price'),quantity:v('quantity'),unit:v('unit'),photo:photo.id,photoKind:photo.kind,share:false,experience:''}});
  // Check every row before storing the photo, so a typo does not leave an orphan photo behind.
  try{inputs.forEach((input,i)=>{try{N.validate(input)}catch(err){throw Error(`第 ${[...rowsBox.children].indexOf(rows[i])+1} 項：${err.message}`)}})}
  catch(err){error($('photoError'),err.message);return}
- const btn=$('savePhotoNotes');btn.disabled=true;
+ const btn=$('savePhotoNotes');savingPhotoNotes=true;btn.disabled=true;$('closePhoto').disabled=true;photoForm.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
  const fresh=photo.fresh;
  try{
   if(fresh)await P.save(fresh);
-  try{store.saveMany(inputs)}catch(err){if(fresh)await P.remove(fresh.id).catch(()=>{});throw err}
+  try{await store.saveMany(inputs)}catch(err){if(fresh)await P.remove(fresh.id).catch(()=>{});throw err}
   photo.fresh=false;photoDirty=false;photoDialog.close();refresh();
-  $('noteStatus').textContent=`已存 ${inputs.length} 筆，照片只存在這台裝置。未傳送任何資料。`;
+  $('noteStatus').textContent=cloud?`已同步 ${inputs.length} 筆與照片到目前帳號。`:`已存 ${inputs.length} 筆，照片只存在這台裝置。未傳送任何資料。`;
  }catch(err){error($('photoError'),`未儲存：${err.message}。照片與品項都還在，可以再試一次。`)}
- finally{countRows()}
+ finally{savingPhotoNotes=false;$('closePhoto').disabled=false;photoForm.querySelectorAll('input,select,button').forEach(control=>control.disabled=false);$('recognizePhoto').disabled=!recognizer;countRows()}
 };
 
 $('addNote').onclick=()=>openEditor();$('closeEditor').onclick=requestClose;editor.addEventListener('cancel',e=>{e.preventDefault();requestClose()});$('closeDetail').onclick=()=>detail.close();
 form.addEventListener('input',()=>{dirty=true;updatePreviews()});form.addEventListener('change',()=>{dirty=true;updatePreviews()});
  form.querySelectorAll('[data-experience]').forEach(b=>b.onclick=()=>{const f=form.elements.experience;f.value=f.value===b.dataset.experience?'':b.dataset.experience;dirty=true;updatePreviews();});
 form.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent&&parent!==form){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
-form.onsubmit=e=>{e.preventDefault();try{const input=readInput();store.save(input,editingId);dirty=false;editor.close();refresh();$('noteStatus').textContent=editingId?'已儲存修正，舊版本完整保留。':'私人筆記已儲存在這台裝置。未傳送任何資料。';if(flowProduct&&input.product===flowProduct){try{ShoppingFlow.createPlan(localStorage,'local').remove(flowProduct);$('noteStatus').textContent+=' 已從待買清單移除，可以回行情頁繼續採買。';}catch(err){$('noteStatus').textContent+=` 筆記已儲存，但待買清單未更新：${err.message}`;}}flowProduct=null;}catch(e){error($('formError'),`未儲存：${e.message}。請檢查內容或瀏覽器儲存空間；表單內容已保留。`)}};
+form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');if(savingNote)return;const input=readInput();savingNote=true;button.disabled=true;$('closeEditor').disabled=true;form.querySelectorAll('input,select,textarea,button').forEach(control=>control.disabled=true);try{await store.save(input,editingId,editingSnapshot);dirty=false;editor.close();refresh();$('noteStatus').textContent=editingId?'已儲存修正，舊版本完整保留。':cloud?'私人筆記已同步到目前帳號。':'私人筆記已儲存在這台裝置。未傳送任何資料。';if(flowProduct&&input.product===flowProduct){try{await removePurchased(flowProduct);$('noteStatus').textContent+=' 已從待買清單移除，可以回行情頁繼續採買。';}catch(err){$('noteStatus').textContent+=` 筆記已儲存，但待買清單未更新：${err.message}`;}}flowProduct=null;}catch(e){error($('formError'),`未儲存：${e.message}。請檢查內容或瀏覽器儲存空間；表單內容已保留。`) }finally{savingNote=false;$('closeEditor').disabled=false;form.querySelectorAll('input,select,textarea,button').forEach(control=>control.disabled=false);button.disabled=false}};
 $('searchNotes').oninput=render;
 let pendingBackup=null;
 $('importNotes').onclick=()=>{$('backupFile').value='';$('backupFile').click()};
@@ -166,11 +183,11 @@ $('backupFile').onchange=async()=>{
  $('importNotes').disabled=true;pendingBackup=null;
  try{
   if(file.size>300e6)throw Error('請選擇 300 MB 以內的備份檔。');
-  let text=await file.text(),photos=[];
+  let text=await file.text(),photos=[],shoppingPlan=[];
   // Backups with photos: check the photos, then hand the notes alone to the usual import checks.
-  try{const doc=JSON.parse(text.replace(/^\uFEFF/,''));if(doc&&Array.isArray(doc.photos)){photos=P.check(doc.photos);delete doc.photos;text=JSON.stringify(doc)}}catch(err){if(!(err instanceof SyntaxError))throw err}
+  try{const doc=JSON.parse(text.replace(/^\uFEFF/,''));if(doc&&doc.shoppingPlan!==undefined){if(!Array.isArray(doc.shoppingPlan)||doc.shoppingPlan.length>100||doc.shoppingPlan.some(x=>typeof x!=='string'||!x.trim()||x.length>200)||new Set(doc.shoppingPlan).size!==doc.shoppingPlan.length)throw Error('備份待買清單格式不正確。');shoppingPlan=doc.shoppingPlan;delete doc.shoppingPlan;}if(doc&&Array.isArray(doc.photos)){photos=P.check(doc.photos);delete doc.photos;}text=JSON.stringify(doc)}catch(err){if(!(err instanceof SyntaxError))throw err}
   const result=store.importJSON(text,true);
-  pendingBackup={text,photos};$('importSummary').textContent=`將新增 ${result.added} 筆、補上 ${result.updated} 筆的修改歷史、跳過 ${result.skipped} 筆重複或較舊紀錄。${photos.length?`備份含 ${photos.length} 張照片，這台裝置沒有的會一起加入。`:''}`;
+  pendingBackup={text,photos,shoppingPlan};$('importSummary').textContent=`將新增 ${result.added} 筆、補上 ${result.updated} 筆的修改歷史、跳過 ${result.skipped} 筆重複或較舊紀錄。${shoppingPlan.length?'包含 '+shoppingPlan.length+' 項待買清單，合併而不刪除已有項目。':''}${photos.length?`備份含 ${photos.length} 張照片，這台裝置沒有的會一起加入。`:''}`;
   $('importDialog').showModal();
  }catch(e){$('noteStatus').textContent=`未匯入：${e.message} 原有資料保持不變。`;}
  finally{$('importNotes').disabled=false;}
@@ -179,16 +196,15 @@ $('cancelImport').onclick=()=>{$('importDialog').close();pendingBackup=null;};
 $('importDialog').addEventListener('cancel',()=>{pendingBackup=null;});
 $('confirmImport').onclick=async()=>{
  if(pendingBackup===null)return;
- const {text,photos}=pendingBackup;pendingBackup=null;$('importDialog').close();
- let r;
- try{r=store.importJSON(text);refresh()}
- catch(e){$('noteStatus').textContent=`未匯入：${e.message} 原有資料保持不變。`;return}
- let added=0,photoNote='';
- try{added=await P.importChecked(photos)}catch(e){photoNote=` 照片沒有全部匯入（${e.message}），筆記已匯入，可再匯入一次補上照片。`}
- refresh();
- $('noteStatus').textContent=`匯入完成：新增 ${r.added} 筆、更新歷史 ${r.updated} 筆、跳過 ${r.skipped} 筆${photos.length?`，新增照片 ${added} 張`:''}。未傳送任何資料。${photoNote}`;
+ const {text,photos,shoppingPlan=[]}=pendingBackup;const button=$('confirmImport');button.disabled=true;
+ try{
+  const added=await P.importChecked(photos);const r=await store.importJSON(text);if(shoppingPlan.length){const plan=await currentPlan();for(const product of shoppingPlan)await plan.add(product);}
+  pendingBackup=null;$('importDialog').close();refresh();
+  $('noteStatus').textContent=`匯入完成：新增 ${r.added} 筆、更新歷史 ${r.updated} 筆、跳過 ${r.skipped} 筆${photos.length?`，新增照片 ${added} 張`:''}。${cloud?'已同步到目前帳號。':'未傳送任何資料。'}`;
+ }catch(e){$('importSummary').textContent=`匯入尚未全部完成：${e.message}。備份內容已保留；已加入的內容不會刪除，可以重試完成剩餘部分。`;}
+ finally{button.disabled=false;}
 };
-$('exportNotes').onclick=async()=>{try{const doc=JSON.parse(store.exportJSON());doc.photos=await P.exportFor(N.photoIds(doc.records||[]));const blob=new Blob([JSON.stringify(doc)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=`shopping-notes-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('noteStatus').textContent=`已要求下載完整備份，內含私人心得、所有版本${doc.photos.length?`與 ${doc.photos.length} 張照片`:''}，請妥善保管。`}catch(e){error($('storageError'),`匯出失敗：${e.message}`)}};
+$('exportNotes').onclick=async()=>{try{if(cloud)await store.sync();const doc=JSON.parse(store.exportJSON());doc.shoppingPlan=(await currentPlan()).load();doc.photos=await P.exportFor(N.photoIds(doc.records||[]));const blob=new Blob([JSON.stringify(doc)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=`shopping-notes-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('noteStatus').textContent=`已要求下載完整備份，內含私人心得、所有版本、${doc.shoppingPlan.length} 項待買清單${doc.photos.length?`與 ${doc.photos.length} 張照片`:''}，請妥善保管。`}catch(e){error($('storageError'),`匯出失敗：${e.message}`)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});window.addEventListener('storage',e=>{if(e.key==='veggie-shopping-notes-v1')refresh()});refresh();
-if(new URLSearchParams(location.search).has('purchase')){try{const draft=ShoppingFlow.takeDraft(sessionStorage,'local');if(draft){openEditor();for(const key of ['product','spec','venue','price','quantity','unit'])form.elements[key].value=draft[key]??'';form.elements.date.value=today();if(!form.elements.unit.value)form.elements.unit.value='g';flowProduct=draft.product;dirty=true;updatePreviews();$('productOptions').open=!!draft.quantity;form.elements.venue.focus();}history.replaceState(null,'',location.pathname);}catch(e){error($('storageError'),e.message);}}
+if(new URLSearchParams(location.search).has('purchase')){try{const draft=ShoppingFlow.takeDraft(sessionStorage,flowScope);if(draft){openEditor();for(const key of ['product','spec','venue','price','quantity','unit'])form.elements[key].value=draft[key]??'';form.elements.date.value=today();if(!form.elements.unit.value)form.elements.unit.value='g';flowProduct=draft.product;dirty=true;updatePreviews();$('productOptions').open=!!draft.quantity;form.elements.venue.focus();}history.replaceState(null,'',location.pathname);}catch(e){error($('storageError'),e.message);}}
 })();

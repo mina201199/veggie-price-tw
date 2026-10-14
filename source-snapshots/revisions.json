@@ -1,0 +1,10 @@
+{
+  "gps-map": {
+    "commit": "fd2b6e1e3a9a3debcf0d4146883e197eb3a90b29",
+    "original_checkout": "hosted/gps-map"
+  },
+  "price-feed": {
+    "commit": "99eaa4062a9fb1ac2bfa3729652d0894657d6ba7",
+    "original_checkout": "hosted/price-feed"
+  }
+}

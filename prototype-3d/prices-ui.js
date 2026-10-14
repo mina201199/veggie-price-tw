@@ -89,11 +89,10 @@ function showAll(){mode=null;limit=24;render();}
 async function load(){
   $('error').hidden=true;$('cards').setAttribute('aria-busy','true');$('cards').replaceChildren(el('p','正在讀取行情…'));$('more').hidden=true;
   try{
-    const response=await fetch(location.pathname.startsWith('/app/')?'/api/v1/prices/':'prices-data.json',{cache:'no-store'});if(!response.ok)throw new Error('Unable to load');
-    const data=await response.json();if(data.schema!==1||!Array.isArray(data.items))throw new Error('Invalid data');dataset=data;
+    const data=await PriceSource.load({backend:location.pathname.startsWith('/app/')});if(data.schema!==1||!Array.isArray(data.items))throw new Error('Invalid data');dataset=data;
     $('dataDate').textContent=data.latest?(data.latest===today()?`今日已有交易資料：${data.latest}`:`最新可用行情：${data.latest}（非今日）`):'目前沒有可用行情';
     $('dataScope').textContent=`${data.source} · 新臺幣／公斤`;
-    $('generated').textContent=`${data.scope}。快照產生：${new Date(data.generatedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false})}（臺灣時間）`;
+    $('generated').textContent=`${data.sourceNotice?data.sourceNotice+' ':''}${data.scope}。快照產生：${new Date(data.generatedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false})}（臺灣時間）`;
     render();
     document.dispatchEvent(new CustomEvent('prices:loaded',{detail:data}));
   }catch(e){dataset=null;$('error').hidden=false;$('dataDate').textContent='尚無法取得行情';$('cards').replaceChildren();$('count').textContent='';document.dispatchEvent(new CustomEvent('prices:error'));}

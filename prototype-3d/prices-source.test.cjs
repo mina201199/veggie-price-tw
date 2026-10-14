@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict'),P=require('./prices-source.js');
+const snapshot={schema:1,latest:'2026-10-14',items:[{name:'菜'}]};
+test('current published government feed is preferred without forwarding account credentials',async()=>{let calls=[];const d=await P.load({fetch:async(url,options)=>{calls.push(url);assert.equal(options.headers,undefined);return Response.json(snapshot)}});assert.equal(d.latest,'2026-10-14');assert.deepEqual(calls,['/api/prices']);assert.equal(d.sourceNotice,undefined)});
+test('outage uses saved snapshot with visible provenance, never invents fresh prices',async()=>{const d=await P.load({fetch:async url=>url==='/api/prices'?new Response('',{status:503}):Response.json({...snapshot,latest:'2026-10-07'})});assert.equal(d.latest,'2026-10-07');assert.match(d.sourceNotice,/保存/);await assert.rejects(P.load({fetch:async()=>new Response('',{status:503})}))});
+test('Django remains on its existing endpoint',async()=>{let path;await P.load({backend:true,fetch:async p=>{path=p;return Response.json(snapshot)}});assert.equal(path,'/api/v1/prices/')});

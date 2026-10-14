@@ -40,3 +40,14 @@ credentials*.json
 
 # GPS Sites checkout has its own source repository
 /hosted/gps-map/
+/hosted/sync-runtime/
+
+# Independent Sites repositories and checkout verification copies
+/hosted/price-feed/
+/hosted/feed-source-verification/
+# Local tooling, transfer archives and Blender autosaves
+/.mcp.json
+/*.zip
+/MOVE-TO-LAPTOP.txt
+/搬移與接續說明.txt
+*.blend1

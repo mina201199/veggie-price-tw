@@ -13,6 +13,7 @@ COPY prototype-3d/city-data.js prototype-3d/city-world.js prototype-3d/city-shop
 COPY prototype-3d/city-data/dayuan.json prototype-3d/city-data/zhongli.json ./prototype-3d/city-data/
 COPY prototype-3d/camera-controls.js prototype-3d/characters.js prototype-3d/characters.css prototype-3d/figure-kit.js prototype-3d/figure-cast.js prototype-3d/figure-glb.js prototype-3d/cat-kit.js prototype-3d/cats.js ./prototype-3d/
 COPY prototype-3d/market-directions.js ./prototype-3d/
+COPY prototype-3d/cloud-notes.js ./prototype-3d/
 COPY prototype-3d/vendor/three.min.js prototype-3d/vendor/GLTFLoader.js prototype-3d/vendor/THREE-LICENSE.txt prototype-3d/vendor/leaflet.js prototype-3d/vendor/leaflet.css prototype-3d/vendor/LEAFLET-LICENSE.txt ./prototype-3d/vendor/
 COPY prototype-3d/bajiu/character.js prototype-3d/bajiu/glb-data.js ./prototype-3d/bajiu/
 COPY prototype-3d/dama-character/dama-character.glb ./prototype-3d/dama-character/

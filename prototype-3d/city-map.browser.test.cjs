@@ -3,7 +3,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'C:/Users/User/.cache/co
 const base=process.env.GPS_TEST_URL||'http://localhost:8879/app';
 (async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{
  const context=await browser.newContext({viewport:{width:390,height:844},permissions:['geolocation'],geolocation:{latitude:24.9537,longitude:121.225,accuracy:5}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+'/app.html?view=map');
+ const cloud=process.env.GPS_CLOUD_TEST==='1';
+ await page.goto(cloud?base+'/signin-with-chatgpt?return_to=/app.html?view=map':base+'/app.html?view=map');
+ const initialCount=cloud?(await (await context.request.get(base+'/api/cloud/notes')).json()).document.records.length:0;
  assert.equal(await page.locator('.tabs button').count(),3);assert.equal(await page.locator('.tabs button[data-view=map]').count(),0,'map must be the same city as character exploration');
  const world=page.frameLocator('iframe[data-view=world]');await world.locator('#cityVenueSelect option[value]').first().waitFor({state:'attached'});
  await page.waitForFunction(()=>document.querySelector('iframe[data-view=world]').contentWindow.GPSWorld.city()?.venues.length>0);
@@ -22,11 +24,11 @@ const base=process.env.GPS_TEST_URL||'http://localhost:8879/app';
   await world.locator('#shopCategories button').first().click();await world.locator('#shopNoteForm').waitFor();
   await world.locator('#shopCollect').click();assert.equal(await world.locator('#shopCollect').isDisabled(),true);
   await world.locator('#shopPrices button[data-product]').first().waitFor();
-  await world.locator('#shopNoteForm [name=product]').fill('戶外測試高麗菜');await world.locator('#shopNoteForm [name=price]').fill('45');await world.locator('#shopNoteForm button[type=submit]').click();await world.locator('#shopSaveStatus').filter({hasText:'已儲存'}).waitFor();
+  await world.locator('#shopNoteForm [name=product]').fill('戶外測試高麗菜');await world.locator('#shopNoteForm [name=price]').fill('45');await world.locator('#shopNoteForm button[type=submit]').click();await world.locator('#shopSaveStatus').filter({hasText:/已儲存|已同步/}).waitFor();
   await world.locator('#shopLeave').click();await world.locator('#shopInterior').waitFor({state:'hidden'});
  }
- const records=await page.evaluate(()=>JSON.parse(localStorage.getItem('veggie-shopping-notes-v1')).records);assert.equal(records.length,2);assert.ok(records.every(r=>r.versions[0].price===45));
- await page.locator('button[data-view=notes]').click();const notebook=page.frameLocator('iframe[data-view=notes]');await notebook.locator('#noteList .note-card').first().waitFor();assert.equal(await notebook.locator('#noteList .note-card').count(),2);await page.locator('button[data-view=world]').click();
+ const records=cloud?(await (await context.request.get(base+'/api/cloud/notes')).json()).document.records:await page.evaluate(()=>JSON.parse(localStorage.getItem('veggie-shopping-notes-v1')).records);assert.equal(records.length,initialCount+2);assert.ok(records.slice(initialCount).every(r=>r.versions[0].price===45));
+ await page.locator('button[data-view=notes]').click();const notebook=page.frameLocator('iframe[data-view=notes]');await notebook.locator('#noteList .note-card').first().waitFor();assert.equal(await notebook.locator('#noteList .note-card').count(),initialCount+2);await page.locator('button[data-view=world]').click();
  await world.locator('#gpsToggle').click();await page.waitForFunction(()=>MarketApp.context().gps.status==='following');
  // Moving outdoors while a room is open must preserve the newest accepted fix on exit.
  const nearShop=await page.evaluate(()=>{const w=document.querySelector('iframe[data-view=world]').contentWindow,c=w.GPSWorld.city(),v=c.venues.filter(v=>v.kind==='supermarket').sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z))[0];return {id:v.id,...w.MarketGPS.unproject(v.entrance,c.origin)}});

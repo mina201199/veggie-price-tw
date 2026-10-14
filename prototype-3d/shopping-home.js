@@ -2,16 +2,27 @@
 'use strict';
 const F=window.ShoppingFlow,N=window.ShoppingNotes,$=id=>document.getElementById(id);
 const account=location.pathname.startsWith('/app/');
-let scope=null,records=[],data=null,plan=null;
+let scope=null,records=[],data=null,plan=null,cloudStore=null;
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
 function notice(message){$('shoppingStatus').textContent=message;}
 const money=n=>Number(n).toLocaleString('zh-TW',{maximumFractionDigits:1});
 async function json(path){const r=await fetch('/api/v1/'+path,{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw Error('採買紀錄暫時無法讀取，請重新登入或稍後再試。');return r.json();}
 function clearPrivate(){records=[];plan=null;scope=null;document.querySelectorAll('.shopping-history').forEach(n=>n.textContent='私人採買紀錄已清除，請回採買帳本重新登入。');render();}
-async function ensureAccount(){if(!account)return;let s;try{s=await json('auth/session/');}catch(e){clearPrivate();throw e;}if(!s.authenticated||scope!=='account-'+s.user.id){clearPrivate();throw Error('帳號狀態已變更，請回採買帳本登入。');}}
+async function ensureAccount(){
+ if(cloudStore){
+  try{
+   await cloudStore.sync();records=cloudStore.load();
+   if(plan)await plan.sync();else plan=await CloudPlan.create({user:cloudStore.user});
+   scope='account-'+cloudStore.user.id;
+  }catch(e){if(/帳號已變更|登入已過期|請重新登入|重新整理後登入/.test(e.message))clearPrivate();throw e;}
+  return;
+ }
+ if(!account)return;let s;try{s=await json('auth/session/');}catch(e){clearPrivate();throw e;}
+ if(!s.authenticated||scope!=='account-'+s.user.id){clearPrivate();throw Error('帳號狀態已變更，請回採買帳本登入。');}
+}
 function matching(product){return data?Prices.pickVariety(data.items,product)||data.items.find(x=>x.name===product):null;}
 function openProduct(product){const x=matching(product);if(x)PriceList.openDetail(x);else { $('foodSearch').value=product;$('foodSearch').dispatchEvent(new Event('input'));Drawer.set('full');notice('目前沒有這項商品的行情，仍可加入清單並記錄實際購買價格。');}}
-async function add(product){try{await ready;await ensureAccount();if(!plan)throw Error('待買清單尚未就緒，請重新載入或登入後再試。');plan.add(product);render();notice(`已加入「${product}」，買完儲存筆記後會從清單移除。`);}catch(e){notice(e.message);}}
+async function add(product){try{await ready;await ensureAccount();if(!plan)throw Error('待買清單尚未就緒，請重新載入或登入後再試。');await plan.add(product);render();notice(`已加入「${product}」，買完儲存筆記後會從清單移除。`);return true;}catch(e){notice(e.message);return false;}}
 async function record(item,price='',quantity='',unit='台斤'){
  try{await ready;if(!scope)throw Error('採買紀錄尚未就緒，請重新載入或回採買帳本登入。');await ensureAccount();F.putDraft(sessionStorage,scope,F.draft(item,price,quantity,unit));const destination=new URL(account?'mobile-app.html?purchase=1':'notebook.html?purchase=1',location.href);window.top.location.href=destination.href;}catch(e){notice(e.message);const inline=$('quoteError');if(inline)inline.textContent=e.message;}
 }
@@ -20,7 +31,7 @@ function render(){
  let products=[];try{products=plan?plan.load():[];}catch(e){notice(e.message);}
  $('shoppingCount').textContent=`${products.length} 項`;
  if(!products.length)list.append(el('p',scope?'還沒決定買什麼？從常買食材或划算行情加一項。':'登入後可建立待買清單。','sub'));
- for(const product of products){const row=el('div',undefined,'shopping-row'),view=el('button',product,'shopping-product'),buy=el('button','買了，記一筆','shopping-button'),remove=el('button','移除','shopping-remove');view.onclick=()=>openProduct(product);buy.onclick=()=>record({name:product});remove.onclick=async()=>{try{await ensureAccount();if(!plan)throw Error('請重新登入。');plan.remove(product);render();notice(`已移除「${product}」。`);}catch(e){notice(e.message);}};remove.setAttribute('aria-label',`移除 ${product}`);row.append(view,buy,remove);list.append(row);}
+ for(const product of products){const row=el('div',undefined,'shopping-row'),view=el('button',product,'shopping-product'),buy=el('button','買了，記一筆','shopping-button'),remove=el('button','移除','shopping-remove');view.onclick=()=>openProduct(product);buy.onclick=()=>record({name:product});remove.onclick=async()=>{try{await ensureAccount();if(!plan)throw Error('請重新登入。');await plan.remove(product);render();notice(`已移除「${product}」。`);}catch(e){notice(e.message);}};remove.setAttribute('aria-label',`移除 ${product}`);row.append(view,buy,remove);list.append(row);}
  const frequent=F.frequent(records);
  if(!frequent.length)recent.append(el('p','留下第一筆採買後，這裡會記住你常買的食材。','sub'));
  for(const n of frequent){const box=el('div',undefined,'shopping-tile'),view=el('button',n.product,'shopping-product');view.onclick=()=>openProduct(n.product);box.append(view,el('small',`${n.date} · ${n.venue} · $${money(n.price)}${n.quantity?`／${n.quantity} ${n.unit}`:'（總價）'}`));const x=matching(n.product);if(x){const state=Prices.assess(x,F.today());box.append(el('small',`${x.date} 批發參考：${state.stale?'歷史報價':state.label}`));}else box.append(el('small','尚無對應行情，仍可記錄'));const b=el('button','＋ 加入清單','shopping-button');b.onclick=()=>add(n.product);box.append(b);recent.append(box);}
@@ -38,15 +49,15 @@ function attachQuote(box,x,fields){
 }
 const ready=(async()=>{try{
  if(account){const session=await json('auth/session/');if(!session.authenticated){notice('菜價不需登入；使用私人紀錄與清單前，請先回採買帳本登入。');render();return;}scope='account-'+session.user.id;let page=1,count=Infinity;while(records.length<count){const result=await json('notes/?page='+page++);if(!result.records.length)break;records.push(...result.records);count=result.count;}await ensureAccount();}
- else {scope='local';records=N.createStore(localStorage).load();}
- plan=F.createPlan(localStorage,scope);render();
+ else {const store=window.CloudNotes?await CloudNotes.createStore():N.createStore(localStorage);records=store.load();if(store.mode==='cloud'){cloudStore=store;scope='account-'+store.user.id;plan=await CloudPlan.create({user:store.user});notice('待買清單與採買紀錄已同步到目前帳號。');}else scope='local';}
+ if(!plan)plan=F.createPlan(localStorage,scope);render();
  }catch(e){clearPrivate();notice(e.message);}})();
- $('shoppingAddForm').onsubmit=e=>{e.preventDefault();add($('shoppingProduct').value);$('shoppingProduct').value='';};
+ $('shoppingAddForm').onsubmit=async e=>{e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;try{if(await add($('shoppingProduct').value))$('shoppingProduct').value='';}finally{button.disabled=false;}};
  const noteLink=$('shoppingNotebook');noteLink.href=account?'mobile-app.html':'notebook.html';noteLink.target='_top';noteLink.textContent=account?'開啟採買帳本 →':'開啟採買筆記 →';
  const navNote=document.querySelector('.bottom-nav a[href="notebook.html"]');navNote.href=noteLink.href;navNote.target='_top';
  document.addEventListener('prices:loaded',e=>{data=e.detail;render();});document.addEventListener('prices:error',()=>{data=null;render();$('shoppingDeals').replaceChildren(el('p','行情暫時無法讀取；仍可使用待買清單和筆記。','sub'));});
- window.addEventListener('storage',e=>{if(e.key===F.planKey(scope))render();else if(!account&&e.key==='veggie-shopping-notes-v1'){try{records=N.createStore(localStorage).load();render();}catch(e){notice(e.message);}}});
+ window.addEventListener('storage',e=>{if(e.key===F.planKey(scope))render();else if(!account&&!cloudStore&&scope==='local'&&e.key==='veggie-shopping-notes-v1'){try{records=N.createStore(localStorage).load();render();}catch(e){notice(e.message);}}});
  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
- if(account){const check=()=>{if(scope)ensureAccount().catch(e=>notice(e.message));};window.addEventListener('focus',check);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});}
+ const check=()=>{if(scope&&(account||cloudStore))ensureAccount().then(render).catch(e=>notice(e.message));};window.addEventListener('focus',check);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});setInterval(()=>{if(!document.hidden)check()},30000);
  window.PriceShopping={attachQuote,ready};
 })();

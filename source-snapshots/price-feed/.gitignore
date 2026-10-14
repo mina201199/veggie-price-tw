@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+/.sites-runtime/
+/prototype-3d/
+/.env*
+/.codex/
+/.agents/
