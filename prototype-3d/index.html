@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>菜市漫遊 · 3D 手機試玩</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="notebook-entry.css"><script src="cat-kit.js"></script><script src="cats.js"></script></head>
+<body><link rel="stylesheet" href="interior.css"><link rel="stylesheet" href="characters.css"><main id="phone"><div id="world" aria-label="可行走的 3D 城市與室內"></div><div class="vignette"></div>
+<a id="notebookLink" href="notebook.html">📒 採買筆記</a>
+<header><div class="brand"><span class="logo">芽</span><div><b>菜市漫遊</b><small>步行探索 · 示意街區</small></div></div><button id="reset" aria-label="回到起點">↺</button></header>
+<div class="wallet"><span>探索者 Lv.1</span><b>◈ <span id="points">80</span></b></div>
+<div class="top-note">3D 試玩版 · 搖桿模擬，未讀取 GPS</div>
+<div id="venueLabel" class="venue-label" hidden><b></b><small></small></div>
+<div class="camera-tools"><button id="rotateLeft" aria-label="鏡頭向左旋轉">↶</button><button id="rotateRight" aria-label="鏡頭向右旋轉">↷</button><button id="zoom" aria-label="切換鏡頭遠近">⊕</button></div>
+<div id="hint">拖曳搖桿，陪角色走到市場門口</div>
+<div class="bottom"><div class="discovery"><div><span id="venueType">TRADITIONAL MARKET</span><h1 id="venueName">青田市場</h1><p id="distance">尋找入口中…</p></div><button id="enter" disabled>走近探索 <span>↗</span></button></div><div class="controls"><div id="joystick" role="group" aria-label="移動搖桿"><div class="joy-ring"></div><div id="stick"></div><span>移動</span></div><div class="control-copy"><b id="movement">出發逛市場</b><small>手機：拖曳左側搖桿<br>電腦：方向鍵 / WASD<br>拖曳畫面可轉動鏡頭</small></div><button id="guide">往入口走<br><small>示範步行</small></button></div></div>
+<div id="sheet" hidden><div class="sheet-head"><div><small id="insideType">市場圖鑑</small><h2 id="insideName"></h2></div><button id="closeSheet" aria-label="返回街區">✕</button></div><p id="insideHint"></p><div id="categories"></div><section id="detail" hidden></section><p class="disclaimer">此為互動原型。照片、定位、AI 審核、點數與付款尚未串接。</p></div>
+<div id="toast" role="status" aria-live="polite"></div><div id="loading"><b>正在走進小城市…</b><p>載入 3D 場景</p></div><div id="error" hidden role="alert">3D 場景無法啟動。請使用支援 WebGL 的瀏覽器，或開啟硬體加速後重試。</div>
+</main><aside class="desktop-caption"><b>菜市漫遊</b><span>手機直式 · 真實 3D 場景原型</span><p>走路、轉動鏡頭、探索市場。<br>城市為原創示意，並非實際街道。</p></aside><script src="vendor/three.min.js"></script><script src="figure-kit.js"></script><script src="figure-cast.js"></script><script src="vendor/GLTFLoader.js"></script><script src="figure-glb.js"></script><script src="characters.js"></script><script src="app.js"></script></body></html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>市場人物圖鑑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: a figurine display stage (pink backdrop, white base) beside a numbered collection grid, like a toy series catalogue. */
+:root {
+  --bg: #FBF3F1; --surface: #FFFFFF; --ink: #4A3537; --ink-2: #8A7375; --line: #EDDCDC;
+  --stage: #F2D7DE; --stage-floor: #EBCBD3; --accent: #D9667A; --accent-ink: #FFFFFF; --chip: #F7E6E8; --shadow: rgba(110, 60, 70, .14);
+  --display: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --num: "Fredoka", "Noto Sans TC", system-ui, sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1E1819; --surface: #2A2224; --ink: #F5E9EA; --ink-2: #C3AEB0; --line: #3D3134;
+    --stage: #3A2B30; --stage-floor: #33262A; --accent: #F08A9C; --accent-ink: #2A1418; --chip: #3A2B2F; --shadow: rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1E1819; --surface: #2A2224; --ink: #F5E9EA; --ink-2: #C3AEB0; --line: #3D3134;
+  --stage: #3A2B30; --stage-floor: #33262A; --accent: #F08A9C; --accent-ink: #2A1418; --chip: #3A2B2F; --shadow: rgba(0, 0, 0, .4);
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 var(--body); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap { height: 100%; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); gap: 20px; padding-inline: 20px; padding-block: 20px; max-width: 1360px; margin: 0 auto; }
+#stage { position: relative; min-height: 0; border-radius: 28px; overflow: hidden; background: var(--stage); box-shadow: 0 0 0 1px var(--line); }
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#stage canvas:active { cursor: grabbing; }
+.stage-top { position: absolute; top: 14px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none; }
+.stage-top > * { pointer-events: auto; }
+.series { font: 600 12px/1 var(--num); letter-spacing: .22em; text-transform: uppercase; color: var(--ink-2); padding: 8px 12px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.views { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: 0 4px 16px var(--shadow); }
+.views button { border: 0; background: transparent; border-radius: 999px; padding: 7px 14px; font-weight: 500; white-space: nowrap; }
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.round { border: 0; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: 0 2px 10px var(--shadow); display: grid; place-items: center; font-size: 16px; }
+.round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.tools { display: flex; gap: 6px; }
+#loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: var(--ink-2); }
+#loading b { display: block; color: var(--ink); font: 700 22px/1.4 var(--display); }
+.hint { position: absolute; left: 16px; bottom: 22px; margin: 0; color: var(--ink-2); font-size: 12px; }
+
+.side { min-height: 0; display: grid; grid-template-rows: auto 1fr; gap: 16px; }
+.info { display: grid; gap: 8px; padding: 4px 4px 0; }
+.info .no { font: 600 13px/1 var(--num); letter-spacing: .18em; color: var(--accent); }
+.info h1 { margin: 0; font: 900 34px/1.15 var(--display); letter-spacing: .04em; text-wrap: balance; }
+.info p { margin: 0; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; padding: 0; list-style: none; }
+.chips li { padding: 3px 10px; border-radius: 999px; background: var(--chip); font-size: 12.5px; }
+
+.grid { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-content: start; padding: 2px; }
+.card { display: grid; gap: 2px; justify-items: center; padding: 8px 6px 10px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); text-align: center; min-width: 0; }
+.card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.card .thumb { width: 100%; aspect-ratio: 5 / 6; border-radius: 12px; background: var(--stage); display: grid; place-items: center; overflow: hidden; }
+.card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.card .thumb span { font: 600 18px/1 var(--num); color: var(--ink-2); opacity: .6; }
+.card small { font: 600 11px/1.2 var(--num); letter-spacing: .14em; color: var(--ink-2); margin-top: 4px; }
+.card b { font-weight: 700; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+@media (max-width: 860px) {
+  .wrap { height: auto; grid-template-columns: minmax(0, 1fr); padding-inline: 16px; padding-block: 12px; gap: 14px; }
+  #stage { height: min(68vh, 560px); }
+  .side { grid-template-rows: auto auto; }
+  .info h1 { font-size: 26px; }
+  .grid { overflow: visible; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .hint { display: none; }
+}
+@media (max-width: 420px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .views button { padding: 7px 10px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main id="stage" aria-label="可旋轉的 3D 公仔展示台">
+    <div class="stage-top">
+      <span class="series">Market Folk · 12</span>
+      <div class="tools">
+        <button id="spin" class="round" aria-pressed="true" aria-label="自動旋轉">⟳</button>
+        <button id="all" class="round" aria-pressed="false" aria-label="全員一起看">☷</button>
+      </div>
+    </div>
+    <div class="views" role="group" aria-label="視角">
+      <button data-yaw="0" aria-pressed="false">正面</button>
+      <button data-yaw="1.5708" aria-pressed="false">側面</button>
+      <button data-yaw="3.1416" aria-pressed="false">背面</button>
+    </div>
+    <p class="hint">拖曳旋轉・滾輪縮放</p>
+    <div id="loading"><b>市場人物圖鑑</b>正在擺上展示台…</div>
+  </main>
+  <aside class="side">
+    <section class="info" aria-live="polite">
+      <span class="no" id="no">No.01</span>
+      <h1 id="name">買菜阿嬤</h1>
+      <p id="role"></p>
+      <ul class="chips" id="items" aria-label="特徵"></ul>
+    </section>
+    <nav class="grid" id="grid" aria-label="選擇角色"></nav>
+  </aside>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="figure-kit.js"></script>
+<script src="figure-cast.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
+<script src="figure-glb.js"></script>
+<script src="figures.js"></script>
+</body>
+</html>

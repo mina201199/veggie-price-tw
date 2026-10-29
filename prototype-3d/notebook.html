@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>我的採買筆記 · 菜市漫遊</title><link rel="stylesheet" href="notebook.css"></head>
+<body><main class="notebook">
+ <header><a href="index.html" class="back">← 返回城市</a><span class="privacy">🔒 私人筆記</span></header>
+ <section class="intro"><small>菜市漫遊 / MY SHOPPING JOURNAL</small><h1>把好買的，<br>都記下來。</h1><p>哪家的肉好吃、上次買多少錢，<br>留給下一次採買的自己。</p><span class="intro-stamp" aria-hidden="true">買<br>菜<br>記</span></section>
+ <div class="local-notice">僅存這台裝置的瀏覽器，沒有帳號同步。照片也只存在這裡，不會上傳。清除網站資料會遺失筆記與照片，請定期匯出備份。共用裝置上的其他人也可能看到。</div>
+ <div id="storageError" role="alert" hidden></div>
+ <div class="toolbar"><button id="addNote" class="primary">＋ 記一筆採買</button><button id="addFromPhoto" class="primary photo-button">📷 拍收據／標價</button></div>
+ <div class="toolbar backup-row"><button id="exportNotes" class="secondary">匯出備份</button><small>備份含筆記、所有版本與照片。</small></div>
+ <div class="import-row"><button id="importNotes" class="secondary">匯入備份</button><small>搬到新電腦？從 JSON 還原，保留既有筆記。</small></div><input id="backupFile" type="file" accept=".json,application/json" hidden>
+ <section id="quickRepeat" hidden><h2 class="quick-title">最近買過 · 再買一次</h2><p class="field-hint">沿用商品資料，只需確認這次價格。</p><div id="repeatList" class="quick-list"></div></section>
+ <label class="search">搜尋筆記<input id="searchNotes" type="search" placeholder="商品、品牌、分店或心得…"></label>
+ <div class="list-heading"><h2>我的採買歷史</h2><span id="noteCount"></span></div>
+ <div id="noteList"></div><div id="noteStatus" role="status" aria-live="polite"></div>
+ <footer>可以附上收據或標價照片，對照照片手動輸入。自動辨識（AI）、雲端同步與公開實價審核尚未串接。</footer>
+</main>
+<dialog id="noteEditor" aria-labelledby="editorTitle"><div class="dialog-head"><div><small>只屬於你的採買紀錄</small><h2 id="editorTitle">新增採買筆記</h2></div><button type="button" id="closeEditor" aria-label="關閉編輯">✕</button></div>
+ <form id="noteForm">
+  <p class="quick-intro">只要 3 項，先記下來。其他以後再補。</p>
+  <input type="hidden" name="photo" value=""><input type="hidden" name="photoKind" value="">
+  <figure id="editorPhoto" class="note-photo small" hidden><img alt=""><figcaption></figcaption></figure>
+  <label>分店／市場與攤位 *<input name="venue" required maxlength="200" placeholder="例如：全聯○○店／○○市場阿美肉攤" list="knownVenues"></label><datalist id="knownVenues"></datalist>
+  <div id="venueChips" class="chips" aria-label="最近商家"></div>
+  <label>商品名稱 *<input name="product" required maxlength="200" placeholder="例如：雞胸肉、高麗菜" list="knownProducts"></label><datalist id="knownProducts"></datalist>
+  <div id="productChips" class="chips" aria-label="常買商品"></div>
+  <label>這次總價（元）*<input name="price" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required placeholder="例如：89"></label>
+  <p id="lastPriceHint" class="field-hint" hidden></p>
+  <section class="experience-quick" aria-labelledby="experienceLabel"><h3 id="experienceLabel">這次購買經驗</h3><p class="field-hint">可略過，再點一次可取消。僅作為你的私人感受。</p><input type="hidden" name="experience" value=""><div class="experience-buttons" role="group" aria-label="購買經驗"><button type="button" data-experience="不好" aria-pressed="false">👎 不好</button><button type="button" data-experience="普通" aria-pressed="false">😐 普通</button><button type="button" data-experience="優秀" aria-pressed="false">👍 優秀</button></div></section>
+  <details class="optional" id="experienceOptions"><summary>＋ 補充心得 <small>想記更多再展開</small></summary>
+  <fieldset><legend>這次的個人體驗 · 不公開</legend><p class="field-hint">新鮮度是個人感受，不代表食品安全判定或店家的永久評價。</p>
+   <div class="pair"><label>新鮮度感受<select name="freshness"><option value="">尚未評價</option><option>這次覺得新鮮</option><option>這次覺得普通</option><option>這次不太滿意</option></select></label><label>下次會回購嗎？<select name="repurchase"><option value="">還沒決定</option><option>願意回購</option><option>看情況</option><option>暫不回購</option></select></label></div>
+   <label>口感<input name="taste" maxlength="200" placeholder="例如：嫩、適合煎"></label><label>服務<input name="service" maxlength="200" placeholder="例如：願意幫忙分切"></label>
+   <label>私人備註<textarea name="notes" rows="3" maxlength="2000" placeholder="記下值得回購的原因或下次要注意的事"></textarea></label>
+  </fieldset></details>
+  <section class="share-box" aria-labelledby="shareLabel"><h3 id="shareLabel">分享設定</h3><label class="check"><input name="share" type="checkbox"><span>願意分享這次價格</span></label><p>目前只記錄意願，不會上傳、送審或發點。未來分享前會再次確認，不含購買經驗與私人心得。</p><div id="sharePreview" hidden></div></section>
+  <p id="formError" role="alert" hidden></p><button type="submit" class="primary save">儲存私人筆記</button>
+  <details class="optional" id="dateOptions"><summary>購買日期：<span id="dateLabel"></span> · 更改</summary><label>購買／觀測日期<input name="date" type="date" required></label></details>
+  <details class="optional subtle" id="productOptions"><summary>＋ 品牌／重量等資訊 <small>選填</small></summary>
+  <div class="pair"><label>品牌（可留白）<input name="brand" maxlength="200" placeholder="無品牌也可以記錄"></label><label>產地<input name="origin" maxlength="200" placeholder="例如：臺灣"></label></div>
+  <label>部位／品種／規格<input name="spec" maxlength="200" placeholder="例如：去皮、冷藏、有機"></label>
+  <div class="pair"><label>重量／數量（可略過）<input name="quantity" type="number" min="0.001" max="1000000" step="0.001" inputmode="decimal" placeholder="不知道就留白"></label><label>單位<select name="unit"><option value="g">公克 g</option><option value="kg">公斤 kg</option><option>台斤</option><option>顆</option><option>包</option><option>盒</option><option>把</option></select></label></div>
+  <p id="unitPreview" class="field-hint">重量已知才換算每公斤；不猜測一包或一顆有多重。</p>
+  <label>促銷／會員條件<input name="promo" maxlength="200" placeholder="例如：會員價、第二件折扣、原價"></label>
+  </details>
+ </form>
+</dialog>
+<dialog id="noteDetail" aria-labelledby="detailTitle"><div class="dialog-head"><h2 id="detailTitle">採買紀錄</h2><button id="closeDetail" aria-label="關閉紀錄">✕</button></div><div id="detailContent"></div></dialog>
+<dialog id="photoEntry" aria-labelledby="photoTitle"><div class="dialog-head"><div><small>收據或商品標價 · 照片只存在這台裝置</small><h2 id="photoTitle">從照片記帳</h2></div><button type="button" id="closePhoto" aria-label="關閉照片記帳">✕</button></div>
+ <form id="photoForm" novalidate>
+  <label class="photo-pick" id="photoPick"><input id="photoFile" type="file" accept="image/*"><span class="photo-pick-icon" aria-hidden="true">📷</span><b>拍照或選擇照片</b><small>手機會讓你選相機或相簿。照片會先縮小再存，不會上傳。</small></label>
+  <div id="photoPreview" hidden>
+   <figure class="note-photo"><img id="photoImg" alt="這次的收據或標價照片"></figure>
+   <div class="photo-tools"><div class="kind-toggle" role="group" aria-label="照片類型"><button type="button" data-kind="收據" aria-pressed="true">🧾 收據</button><button type="button" data-kind="標價" aria-pressed="false">🏷️ 標價</button><button type="button" data-kind="其他" aria-pressed="false">其他</button></div><button type="button" id="replacePhoto" class="secondary">換一張</button></div>
+   <div class="recognize-box"><button type="button" id="recognizePhoto" class="secondary" disabled>🤖 自動辨識</button><small>之後會接上 AI，自動把照片上的品項填進下面；現在請對照照片手動輸入。</small></div>
+  </div>
+  <div class="pair"><label>分店／市場與攤位 *<input name="venue" maxlength="200" placeholder="例如：全聯○○店" list="knownVenues"></label><label>購買日期<input name="date" type="date"></label></div>
+  <div class="items-head"><h3>品項 <small id="itemCount"></small></h3><small>勾選的品項各存成一筆筆記</small></div>
+  <div id="itemRows" class="item-rows"></div>
+  <button type="button" id="addItemRow" class="secondary add-row">＋ 再加一項</button>
+  <p id="photoError" role="alert" hidden></p>
+  <button type="submit" id="savePhotoNotes" class="primary save">儲存勾選的品項</button>
+ </form>
+</dialog>
+<dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">確認匯入筆記</h2><p id="importSummary"></p><p class="field-hint">只存在這台裝置，不會上傳。會保留修改歷史，不刪除既有筆記。建議先匯出目前資料備份。</p><div class="detail-actions"><button id="cancelImport" class="secondary">取消</button><button id="confirmImport" class="primary">確認匯入</button></div></dialog>
+<script src="notes-store.js"></script><script src="photos.js"></script><script src="notebook.js"></script></body></html>

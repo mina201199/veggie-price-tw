@@ -5,16 +5,23 @@ site/
 __pycache__/
 *.pyc
 
-# 未公開原型、內部規劃與工作紀錄
-/prototype-3d/
+# 內部規劃與工作紀錄（prototype-3d/ 改為納入版本控制；repo 為私人，公開網站只部署 site/）
 /docs/
 /.superpowers/
 /.agents/
 /.codex/
 *.log
 /ChatGPT*.png
+# 角色設定參考圖與開發時的截圖（程式都沒有引用）
+/image/
+/prototype-3d/*.png
 /private/
 /exports/
+# Blender 工作檔與產生的貼圖、預覽圖（blender/grandma_build.py 會重建；模型以 prototype-3d/models/*.glb 為準）
+/blender/*.blend
+/blender/*.blend1
+/blender/textures/
+/blender/previews/
 
 # 憑證與本機設定；不影響已追蹤檔案
 .env
